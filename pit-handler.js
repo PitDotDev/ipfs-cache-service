@@ -110,7 +110,7 @@ class PitHandler {
             lastHashId = await store.getLastHash(LAST_REPO_HASH, id);
             // throw new Error();
         } catch (error) {
-            lastHashId = objects[0].object_hash;
+            lastHashId = null;
         }
 
         if (lastHashId === objects[index].object_hash) {
@@ -121,7 +121,7 @@ class PitHandler {
         store.setLastHash(LAST_REPO_HASH, { id, ipfs_hash: objects[index].object_hash });
 
 
-        while (objects[index].object_hash !== lastHashId) {
+        while (index >= 0 && objects[index].object_hash !== lastHashId) {
             const type = objects[index].object_type & 0x80;
             if (type !== 0) {
                 this.__add_to_queue(['pit', id, index].join('-'), objects[index].object_hash)

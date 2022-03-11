@@ -18,7 +18,7 @@ async function main() {
     await new Listener().connect(Pit);
 
     // setup routes
-    const router = new Router()
+    const router = new Router();
 
     router.register("/status", (...args) => status.report(...args))
     router.register("/", (req, res) => {
