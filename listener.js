@@ -3,9 +3,8 @@ const config = require('./config');
 const { fatal } = require('./utils');
 
 class Listener {
-    observers = [];
-
     async connect(...args) {
+        this.observers = [];
         this.api = new WalletApi(config.WalletAPI.Address, config.WalletAPI.ReconnectInterval);
         const connects = [];
         args.forEach((Element) => {
@@ -20,7 +19,7 @@ class Listener {
     }
 
     async __on_connect(connects) {
-        await Promise.all(connects.map(el => el()))
+        await Promise.all(connects.map(el => el()));
         this.api.call("ev_subunsub", { ev_system_state: true }, (err, res) => {
             if (err) return fatal(err);
 

@@ -54,27 +54,27 @@ class Store {
         this.db.del(key, err => fatal(err))
     }
     // Pit
-    setLastHash(prefix, { id, ipfs_hash }) {
+    setLastHash(prefix, { id, hash }) {
         const key = [prefix, id].join('');
-        this.__put_async(key, ipfs_hash);
+        this.__put_async(key, hash);
     }
 
     getLastHash(prefix, id) {
         return this.__get([prefix, id].join(''));
     }
 
-    registerFailed(prefix, { id, ipfs_hash }) {
-        const key = [prefix, id].join('');
-        this.__put_async(key, ipfs_hash);
+    registerFailed(prefix, { id, hash = '' }) {
+        const key = [prefix, hash, id].join('');
+        this.__put_async(key, { id, hash });
     }
 
-    registerPending(prefix, { id, ipfs_hash }) {
-        const key = [prefix, id].join('');
-        this.__put_async(key, { id, ipfs_hash });
+    registerPending(prefix, { id, hash = '' }) {
+        const key = [prefix, hash, id].join('');
+        this.__put_async(key, { id, hash });
     }
 
-    removePending(prefix, id) {
-        const key = [prefix, id].join('');
+    removePending(prefix, id, hash = '') {
+        const key = [prefix, hash, id].join('');
         this.__del_async(key);
     }
 
