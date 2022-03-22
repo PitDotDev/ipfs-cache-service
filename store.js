@@ -54,27 +54,30 @@ class Store {
         this.db.del(key, err => fatal(err))
     }
     // Pit
-    setLastHash(prefix, { id, hash }) {
-        const key = [prefix, id].join('');
+    setLastHash(prefix, hash, params) {
+        const arr = params ? Object.entries(params) : []
+        const key = [prefix, ...arr].join('');
         this.__put_async(key, hash);
     }
 
-    getLastHash(prefix, id) {
-        return this.__get([prefix, id].join(''));
+    getLastHash(...args) {
+        return this.__get(args.join(''));
     }
 
-    registerFailed(prefix, { id, hash = '' }) {
-        const key = [prefix, hash, id].join('');
-        this.__put_async(key, { id, hash });
+    registerFailed(prefix, hash, params) {
+        const arr = params ? Object.entries(params) : []
+        const key = [prefix, hash, ...arr].join('');
+        this.__put_async(key, { hash, ...params });
     }
 
-    registerPending(prefix, { id, hash = '' }) {
-        const key = [prefix, hash, id].join('');
-        this.__put_async(key, { id, hash });
+    registerPending(prefix, hash, params) {
+        const arr = params ? Object.entries(params) : []
+        const key = [prefix, hash, ...arr].join('');
+        this.__put_async(key, { hash, ...params });
     }
 
-    removePending(prefix, id, hash = '') {
-        const key = [prefix, hash, id].join('');
+    removePending(prefix, ...args) {
+        const key = [prefix, ...args].join('');
         this.__del_async(key);
     }
 

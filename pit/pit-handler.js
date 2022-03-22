@@ -1,14 +1,15 @@
-const config = require('./config');
-const status = require('./status');
-const store = require('./store');
+const config = require('../config');
+const status = require('../status');
+const store = require('../store');
 const fs = require('fs');
-const { fatal, hex2a } = require('./utils');
+const path = require('path');
+const { fatal, hex2a } = require('../utils');
 
 const CID = 'fda210a4af51fdd2ce1d2a1c0307734ce6fef30b3eec4c04c4d7494041f2dd10';
-const SHADER = 'app.wasm';
+const SHADER = path.join(__dirname, './app.wasm');
 const MAX_CALL = 300;
-const START_POINT = 83;
-const TIMEOUT = 10000;
+const START_POINT = 0;
+const TIMEOUT = 1000;
 
 const LAST_REPO_HASH = "pit-repo-"
 const PENDING_REPO_HASH = "pending-repo-"
@@ -76,6 +77,9 @@ class PitHandler {
 
         this.api.call("ipfs_pin", { hash: ipfs_hash, timeout: TIMEOUT }, (err) => {
             this.status.pending--;
+            this.inPin--;
+            if (!this.inPin) setTimeout(this.__start_pin.bind(this));
+
             if (err) {
                 store.registerFailed(FAILED_REPO, { id, hash: git_hash });
                 this.status.failed++;
@@ -102,9 +106,6 @@ class PitHandler {
         this.api.contract(
             `cid=${CID},role=user,action=repo_get_data,repo_id=${id},obj_id=${git_hash}`,
             (err, { object_data }) => {
-                this.inPin--;
-                if (!this.inPin) setTimeout(this.__start_pin.bind(this));
-
                 if (err) {
                     this.status.failed++;
                     store.registerFailed(FAILED_REPO, { id, hash: git_hash });
@@ -154,6 +155,7 @@ class PitHandler {
             lastHashId = await store.getLastHash(LAST_REPO_HASH, id);
             // throw new Error();
         } catch (error) {
+            // lastHashId = objects[index].object_hash;
             lastHashId = null;
         }
 
@@ -167,7 +169,7 @@ class PitHandler {
         while (index >= 0 && objects[index].object_hash !== lastHashId) {
             const type = objects[index].object_type & 0x80;
             if (type !== 0) {
-                this.__add_to_queue(id, objects[index].object_hash)
+                this.__add_to_queue(id, objects[index].object_hash, index)
             }
             index--;
         }
@@ -199,12 +201,12 @@ class PitHandler {
             })
     }
 
-    __add_to_queue(id, hash) {
+    __add_to_queue(id, hash, index) {
         const { length } = this.callQueue;
         if (!length || this.callQueue[length - 1].length === MAX_CALL) {
             this.callQueue.push(new Array())
         };
-        const req = { id, hash };
+        const req = { id, hash, index };
         this.callQueue[this.callQueue.length - 1].push(req);
     }
 

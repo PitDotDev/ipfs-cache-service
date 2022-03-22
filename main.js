@@ -13,9 +13,10 @@ async function main() {
 
     const status = require('./status')
 
-    const Pit = require('./pit-handler');
+    const Pit = require('./pit/pit-handler');
+    const Dapps = require('./dapps/dapps-handler');
 
-    await new Listener().connect(Pit);
+    await new Listener().connect(Dapps);
 
     // setup routes
     const router = new Router();
@@ -31,9 +32,11 @@ async function main() {
     const server = http.createServer((...args) => router.route(...args))
     server.listen(config.Port)
 }
+setTimeout(() => {
+    main().catch(err => {
+        console.error("IPFS cache service critical failure. The following error has been reported:")
+        console.error(err)
+        process.exit(1)
+    })
+}, 1000);
 
-main().catch(err => {
-    console.error("IPFS cache service critical failure. The following error has been reported:")
-    console.error(err)
-    process.exit(1)
-})
