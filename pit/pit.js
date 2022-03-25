@@ -3,17 +3,18 @@ const status = require('../status');
 const store = require('../store');
 const fs = require('fs');
 const path = require('path');
-const { fatal, hex2a } = require('../utils');
+const { fatal, hex2a, logger } = require('../utils');
 
 const CID = 'fda210a4af51fdd2ce1d2a1c0307734ce6fef30b3eec4c04c4d7494041f2dd10';
 const SHADER = path.join(__dirname, './app.wasm');
 const MAX_CALL = 300;
 const START_POINT = 0;
-const TIMEOUT = 1000;
+const TIMEOUT = 2000;
 
 const LAST_REPO_HASH = "pit-repo-"
 const PENDING_REPO_HASH = "pending-repo-"
-const FAILED_REPO = "failed-repo-"
+const FAILED_REPO = "failed-repo-";
+const LAST_FAILED_INDEX = "last-failed-index-"
 
 class PitHandler {
     constructor(api) {
@@ -46,33 +47,18 @@ class PitHandler {
 
     async __on_system_state(state) {
         status.SystemState = state;
-        console.log(state)
         if (!state.is_in_sync || state.tip_height !== state.current_height) {
             // we're not in sync, wait
             return
         }
-
-        if (this.restartPending) {
-            console.log('Restarting pending metas');
-            this.restartPending = false;
-
-            for await (const [_, val] of store.getPending(PENDING_REPO_HASH)) {
-                if (config.Debug) console.log(val);
-                if (val.hash) this.__add_to_queue(val.id, val.hash);
-            }
-            if (this.callQueue.length) this.__start_pin();
-        }
-
-        if (!this.callQueue.length) {
-            this.api.contract(
-                `cid=${CID},role=user,action=all_repos`,
-                (...args) => this.__on_get_repos(...args),
-                this.shader
-            )
-        }
+        this.api.contract(
+            `cid=${CID},role=user,action=all_repos`,
+            (...args) => this.__on_get_repos(...args),
+            this.shader
+        );
     }
 
-    __pin_meta(id, ipfs_hash, git_hash) {
+    __pin_meta(id, ipfs_hash, git_hash, index) {
         this.status.pending++;
 
         this.api.call("ipfs_pin", { hash: ipfs_hash, timeout: TIMEOUT }, (err) => {
@@ -81,40 +67,42 @@ class PitHandler {
             if (!this.inPin) setTimeout(this.__start_pin.bind(this));
 
             if (err) {
-                store.registerFailed(FAILED_REPO, { id, hash: git_hash });
+                store.registerFailed(FAILED_REPO, git_hash, { id, index });
                 this.status.failed++;
-                this.__logger(`Failed to pin meta ${id}/${ipfs_hash}, ${JSON.stringify(err)}`);
+                logger(`Failed to pin meta ${id}/${ipfs_hash}, ${JSON.stringify(err)}`);
                 return
             }
 
-            store.removePending(PENDING_REPO_HASH, id, git_hash);
+            store.removePending(PENDING_REPO_HASH, git_hash, id, index);
             this.status.pinned++;
-            this.__logger(`Meta hash ${id}/${ipfs_hash} successfully pinned`);
+            logger(`Meta hash ${id}/${ipfs_hash} successfully pinned`);
             return;
         });
     }
 
-
-    __logger(data_to_append) {
-        if (config.Debug) console.log(data_to_append);
-        fs.appendFile('./log.txt', `\n${data_to_append}`, (err) => {
-            if (err) console.log(err);
-        });
-    }
-
-    __on_get_data(id, git_hash) {
+    __on_get_data(id, git_hash, index) {
         this.api.contract(
             `cid=${CID},role=user,action=repo_get_data,repo_id=${id},obj_id=${git_hash}`,
             (err, { object_data }) => {
                 if (err) {
                     this.status.failed++;
-                    store.registerFailed(FAILED_REPO, { id, hash: git_hash });
-                    return this.__logger(`Failed to load repo data:\n\t${err}`);
+                    let lastFailedHash;
+                    try {
+                        store.getLastHash(LAST_FAILED_HASH, id);
+                    } catch (error) {
+                        lastFailedHash = index;
+                        store.registerFailed(LAST_FAILED_INDEX, index, { id });
+                    }
+
+                    if (lastFailedHash < index) {
+                        store.registerFailed(LAST_FAILED_INDEX, index, { id });
+                    }
+                    return logger(`Failed to load repo data:\n\t${err}`);
                 }
-                store.registerPending(PENDING_REPO_HASH, { id, hash: git_hash });
+                store.registerPending(PENDING_REPO_HASH, git_hash, { id, index });
                 const ipfs_hash = hex2a(object_data);
-                this.__pin_meta(id, ipfs_hash, git_hash);
-            });
+                this.__pin_meta(id, ipfs_hash, git_hash, index);
+            }, this.shader);
 
     }
 
@@ -139,7 +127,7 @@ class PitHandler {
 
     async __on_repo_meta(id, err, answer) {
         if (err) {
-            this.__logger(err.message);
+            logger(err.message);
             return;
         }
 
@@ -155,8 +143,8 @@ class PitHandler {
             lastHashId = await store.getLastHash(LAST_REPO_HASH, id);
             // throw new Error();
         } catch (error) {
-            // lastHashId = objects[index].object_hash;
-            lastHashId = null;
+            lastHashId = objects[index].object_hash;
+            // lastHashId = null;
         }
 
         if (lastHashId === objects[index].object_hash) {
@@ -164,7 +152,7 @@ class PitHandler {
             return;
         }
 
-        store.setLastHash(LAST_REPO_HASH, { id, hash: objects[index].object_hash });
+        store.setLastHash(LAST_REPO_HASH, objects[index].object_hash, { id });
 
         while (index >= 0 && objects[index].object_hash !== lastHashId) {
             const type = objects[index].object_type & 0x80;
@@ -178,15 +166,20 @@ class PitHandler {
     __start_pin() {
         const repo = this.callQueue.shift();
         if (repo) {
-            if (config.Debug) console.log('=============NEXT_QUEUE=============')
             this.inPin = repo.length;
-            return repo.forEach(({ id, hash }) => this.__on_get_data(id, hash));
+            return repo.forEach(({ id, hash, index }) => this.__on_get_data(id, hash, index));
         }
         this.__show_status();
     }
 
     __show_status() {
-        console.log(`pending:${this.status.pending}\npinned: ${this.status.pinned}\nfailed: ${this.status.failed}`);
+        const args = [
+            '=============SR3=============',
+            `pending: ${this.status.pending}`,
+            `pinned: ${this.status.pinned}`,
+            `failed: ${this.status.failed}`
+        ].join('\n');
+        console.log(args);
     }
 
     async __build_queue(repos, lastRepoId) {
@@ -198,7 +191,7 @@ class PitHandler {
                 await this.__on_repo_meta(repo_id, ...args);
                 if (repo_id === lastRepoId) return this.__start_pin();
                 this.__build_queue(repos, lastRepoId)
-            })
+            }, this.shader)
     }
 
     __add_to_queue(id, hash, index) {

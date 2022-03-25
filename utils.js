@@ -1,3 +1,7 @@
+const fs = require('fs');
+const config = require('./config');
+const path = require('path');
+
 function err2str(err) {
     if (typeof err === 'string') {
         return err
@@ -24,6 +28,22 @@ function hex2a(hexx) {
     return str;
 }
 
+
+const logger = (function () {
+    const dir = path.join(__dirname, './logs')
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+    }
+    const data = String(new Date()).split('(')[0];
+    return function (data_to_append) {
+        if (!data_to_append) debugger;
+        if (config.Debug) console.log(data_to_append);
+        fs.appendFile(`./logs/log-${data}.txt`, `\n${data_to_append}`, (err) => {
+            if (err) console.log(err);
+        });
+    }
+})()
+
 module.exports = {
-    err2str, hexDecodeU8A, fatal, hex2a
+    err2str, hexDecodeU8A, fatal, hex2a, logger
 }

@@ -4,7 +4,7 @@ const store = require('../store');
 const fs = require('fs');
 const path = require('path');
 
-const { fatal } = require('../utils');
+const { fatal, logger } = require('../utils');
 
 const CID = 'b76ca089082e38b23d5e68feeb8b6f459ae74f5012eb520c87169f88ced307e3';
 const ADMIN_SHADER = path.join(__dirname, './dapps_store_admin_app.wasm');
@@ -47,7 +47,6 @@ class DappHandler {
 
     async __on_system_state(state) {
         status.SystemState = state;
-        console.log(state)
         if (!state.is_in_sync || state.tip_height !== state.current_height) {
             // we're not in sync, wait
             return
@@ -75,7 +74,7 @@ class DappHandler {
 
     async __on_get_daaps(err, { dapps }) {
         if (err) {
-            this.__logger(err.message);
+            logger(err.message);
             return;
         }
 
@@ -115,25 +114,18 @@ class DappHandler {
             if (err) {
                 store.registerFailed(FAILED_DAPPS, hash);
                 this.status.failed++;
-                this.__logger(`Failed to pin dapp ${hash}, ${JSON.stringify(err)}`);
+                logger(`Failed to pin dapp ${hash}, ${JSON.stringify(err)}`);
                 return
             }
 
             store.removePending(PENDING_DAPPS, hash);
             this.status.pending--;
             this.status.pinned++;
-            this.__logger(`Meta hash ${hash} successfully pinned`);
+            logger(`Meta hash ${hash} successfully pinned`);
             return;
         }, this.shader);
     }
 
-
-    __logger(data_to_append) {
-        if (config.Debug) console.log(data_to_append);
-        fs.appendFile('./log.txt', `\n${data_to_append}`, (err) => {
-            if (err) console.log(err);
-        });
-    }
 
     __start_pin() {
         const queue = this.callQueue.shift();
@@ -146,7 +138,13 @@ class DappHandler {
     }
 
     __show_status() {
-        console.log(`pending:${this.status.pending}\npinned: ${this.status.pinned}\nfailed: ${this.status.failed}`);
+        const args = [
+            '=============DAPPS=============',
+            `pending: ${this.status.pending}`,
+            `pinned: ${this.status.pinned}`,
+            `failed: ${this.status.failed}`
+        ].join('\n');
+        console.log(args);
     }
 
     __add_to_queue(hash) {

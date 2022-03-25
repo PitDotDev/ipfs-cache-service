@@ -13,10 +13,11 @@ async function main() {
 
     const status = require('./status')
 
-    const Pit = require('./pit/pit-handler');
-    const Dapps = require('./dapps/dapps-handler');
+    const Pit = require('./pit/pit');
+    const Dapps = require('./dapps/dapps');
+    const CreepingPit = require('./pit/creeping-pit')
 
-    await new Listener().connect(Dapps);
+    await new Listener().connect(Pit, CreepingPit, Dapps);
 
     // setup routes
     const router = new Router();
@@ -38,5 +39,5 @@ setTimeout(() => {
         console.error(err)
         process.exit(1)
     })
-}, 1000);
+}, 10000);
 

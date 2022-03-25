@@ -29,8 +29,10 @@ class Listener {
 
     __on_api_result(err, res, full) {
         if (err) return fatal(err);
-
-        if (full.id === "ev_system_state") return this.__notifyAll(res);
+        if (full.id === "ev_system_state") {
+            console.log(res);
+            return this.__notifyAll(res);
+        }
 
         fatal(`Unexpected Wallet API result call ${full}`)
     }

@@ -54,10 +54,10 @@ class Store {
         this.db.del(key, err => fatal(err))
     }
     // Pit
-    setLastHash(prefix, hash, params) {
-        const arr = params ? Object.entries(params) : []
+    setLastHash(prefix, value, params) {
+        const arr = params ? Object.values(params) : []
         const key = [prefix, ...arr].join('');
-        this.__put_async(key, hash);
+        this.__put_async(key, value);
     }
 
     getLastHash(...args) {
@@ -65,13 +65,13 @@ class Store {
     }
 
     registerFailed(prefix, hash, params) {
-        const arr = params ? Object.entries(params) : []
+        const arr = params ? Object.values(params) : []
         const key = [prefix, hash, ...arr].join('');
         this.__put_async(key, { hash, ...params });
     }
 
     registerPending(prefix, hash, params) {
-        const arr = params ? Object.entries(params) : []
+        const arr = params ? Object.values(params) : []
         const key = [prefix, hash, ...arr].join('');
         this.__put_async(key, { hash, ...params });
     }
