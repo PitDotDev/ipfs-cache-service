@@ -10,7 +10,7 @@ const CID = 'b76ca089082e38b23d5e68feeb8b6f459ae74f5012eb520c87169f88ced307e3';
 const ADMIN_SHADER = path.join(__dirname, './dapps_store_admin_app.wasm');
 const SHADER = path.join(__dirname, './dapps_store_app.wasm');
 const MAX_CALL = 50;
-const TIMEOUT = 120000;
+// const TIMEOUT = 120000;
 
 const LAST_DAPP_HASH = "last-dapp-"
 const PENDING_DAPPS = "pending-dapp-"
@@ -106,7 +106,7 @@ class DappHandler {
     __pin_dapp(hash) {
         this.status.pending++;
         store.registerPending(PENDING_DAPPS, hash);
-        this.api.call("ipfs_pin", { hash, timeout: TIMEOUT }, (err) => {
+        this.api.call("ipfs_pin", { hash }, (err) => {
 
             this.inPin--;
             if (!this.inPin) setTimeout(this.__start_pin.bind(this));
