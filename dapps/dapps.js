@@ -63,13 +63,13 @@ class DappHandler {
             if (this.callQueue.length) return this.__start_pin();
         }
 
-        if (!this.callQueue.length) {
-            this.api.contract(
-                `cid=${CID},action=view_dapps`,
-                (...args) => this.__on_get_daaps(...args),
-                this.shader
-            )
-        }
+        // if (!this.callQueue.length) {
+        this.api.contract(
+            `cid=${CID},action=view_dapps`,
+            (...args) => this.__on_get_daaps(...args),
+            this.shader
+        )
+        //  }
     }
 
     async __on_get_daaps(err, { dapps }) {
@@ -121,7 +121,7 @@ class DappHandler {
             store.removePending(PENDING_DAPPS, hash);
             this.status.pending--;
             this.status.pinned++;
-            logger(`Meta hash ${hash} successfully pinned`);
+            logger(`dapp ${hash} successfully pinned`);
             return;
         }, this.shader);
     }
