@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { fatal, hex2a, logger } = require('../utils');
 
-const CID = 'fda210a4af51fdd2ce1d2a1c0307734ce6fef30b3eec4c04c4d7494041f2dd10';
+const CID = '7aaec975d0348348d82e72bd66d508ac93cb6f9e683bd136d2a879f41c32e8d8';
 const SHADER = path.join(__dirname, './app.wasm');
 const MAX_CALL = 300;
 const START_POINT = 0;

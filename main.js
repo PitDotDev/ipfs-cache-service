@@ -17,7 +17,7 @@ async function main() {
     const Dapps = require('./dapps/dapps');
     const CreepingPit = require('./pit/creeping-pit')
 
-    await new Listener().connect(Pit, CreepingPit, Dapps);
+    await new Listener().connect(Pit, CreepingPit);
 
     // setup routes
     const router = new Router();
