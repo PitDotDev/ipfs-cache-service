@@ -6,7 +6,7 @@ const path = require('path');
 
 const { fatal, logger } = require('../utils');
 
-const CID = 'b76ca089082e38b23d5e68feeb8b6f459ae74f5012eb520c87169f88ced307e3';
+const CID = 'c673c2b940d4f6813901165c426ab084e401259c9794d61e1f5f80453ee80317';
 const ADMIN_SHADER = path.join(__dirname, './dapps_store_admin_app.wasm');
 const SHADER = path.join(__dirname, './dapps_store_app.wasm');
 const MAX_CALL = 50;
@@ -28,9 +28,12 @@ class DappHandler {
 
     on_connect() {
         return new Promise(resolve => {
+            console.log('connect dapps...')
+
             this.api.contract(
                 `action=view`,
                 (err, res) => {
+                    console.log('dapps connected!')
                     if (err) return fatal(err)
                     if (!res.contracts.some(el => el.cid === CID)) {
                         return fatal(`CID not found '${CID}'`)

@@ -39,5 +39,5 @@ setTimeout(() => {
         console.error(err)
         process.exit(1)
     })
-}, 10000);
+});
 
