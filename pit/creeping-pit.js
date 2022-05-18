@@ -5,6 +5,8 @@ const Repo = require('./repo');
 const fs = require('fs');
 const path = require('path');
 const { fatal, hex2a, logger } = require('../utils');
+const Base = require('../base/base');
+const { runInThisContext } = require('vm');
 
 const CID = '7aaec975d0348348d82e72bd66d508ac93cb6f9e683bd136d2a879f41c32e8d8';
 const SHADER = path.join(__dirname, './app.wasm');
@@ -13,14 +15,20 @@ const START_POINT = 0;
 const PENDING_REPO_HASH = "pending-repo-"
 const LAST_FAILED_INDEX = "last-failed-index-"
 
-class PitCreepingHandler {
+const args = {
+    cid: CID,
+    title: 'C_SR3',
+    shader: [...fs.readFileSync(SHADER)]
+}
+
+class PitCreepingHandler extends Base {
     constructor(api) {
+        super(args)
         this.api = api;
-        this.shader = [...fs.readFileSync(SHADER)];
-        this.restartPending = config.RestartPending;
         this.watcher = {};
         this.inPin = 0;
-        this.status = { pinned: 0, pending: 0, failed: 0 }
+        this.status = { pinned: 0, pending: 0, failed: 0 };
+        this.color = "\x1b[34m";
     }
 
     on_connect() {
@@ -29,8 +37,8 @@ class PitCreepingHandler {
                 `role=manager,action=view_contracts`,
                 (err, res) => {
                     if (err) return fatal(err)
-                    if (!res.contracts.some(el => el.cid === CID)) {
-                        return fatal(`CID not found '${CID}'`)
+                    if (!res.contracts.some(el => el.cid === this.cid)) {
+                        return fatal(`CID not found '${this.cid}'`)
                     } resolve()
                 }, this.shader
             )
@@ -49,7 +57,7 @@ class PitCreepingHandler {
         }
 
         this.api.contract(
-            `cid=${CID},role=user,action=all_repos`,
+            `cid=${this.cid},role=user,action=all_repos`,
             (...args) => this.__on_get_repos(...args),
             this.shader
         )
@@ -57,14 +65,14 @@ class PitCreepingHandler {
 
     __on_get_data(id, git_hash, index) {
         this.api.contract(
-            `cid=${CID},role=user,action=repo_get_data,repo_id=${id},obj_id=${git_hash}`,
+            `cid=${this.cid},role=user,action=repo_get_data,repo_id=${id},obj_id=${git_hash}`,
             (err, { object_data }) => {
                 if (err) {
                     this.status.failed++;
-                    store.registerFailed(FAILED_REPO, git_hash, { id, index });
-                    return logger(`Failed to load repo data:\n\t${err}`);
+                    store.registerFailed(`${this.title}-FAILED_REPO`, git_hash, { id, index });
+                    return logger(`${this.title}: Failed to load repo data:\n\t${err}`);
                 }
-                store.registerPending(PENDING_REPO_HASH, git_hash, { id, index });
+                store.registerPending(`${this.title}-PENDING_REPO_HASH`, git_hash, { id, index });
                 const ipfs_hash = hex2a(object_data);
                 this.__pin_meta(id, ipfs_hash, git_hash, index);
             }, this.shader);
@@ -72,9 +80,9 @@ class PitCreepingHandler {
     }
 
     async __on_get_repos(err, { repos }) {
-        if (err) return console.log(`Failed to load repo meta:\n\t${err}`);
+        if (err) return this.console(`Failed to load repo meta:\n\t${err}`);
 
-        if (!repos.length) return console.log('no repos in contract');
+        if (!repos.length) return this.console('no repos in contract');
 
         const lastRepoId = repos[repos.length - 1].repo_id;
         const minimizedRepos = repos.filter((el) => el.repo_id >= START_POINT)
@@ -83,7 +91,7 @@ class PitCreepingHandler {
 
     __on_get_meta() {
         this.api.contract(
-            `cid=${CID},role=user,action=repo_get_meta,repo_id=${repo_id}`,
+            `cid=${this.cid},role=user,action=repo_get_meta,repo_id=${repo_id}`,
             (...args) => this.__on_repo_meta(repo_id, ...args),
             this.shader
         )
@@ -91,13 +99,13 @@ class PitCreepingHandler {
 
     async __on_repo_meta(id, err, answer) {
         if (err) {
-            logger(err.message);
+            logger(`${this.title}: err.message`);
             return;
         }
 
         const { objects } = answer;
         if (!objects.length) {
-            if (config.Debug) console.log(`nothing to pin in repo №${id}`);
+            this.console(`nothing to pin in repo №${id}`);
             return;
         }
 
@@ -105,11 +113,11 @@ class PitCreepingHandler {
 
         let lastIndex;
         try {
-            lastIndex = await store.getLastHash(LAST_FAILED_INDEX, id);
+            lastIndex = await store.getLastHash(`${this.title}-LAST_FAILED_INDEX`, id);
             // throw new Error();
         } catch (error) {
             lastIndex = index;
-            store.setLastHash(LAST_FAILED_INDEX, index, { id });
+            store.setLastHash(`${this.title}-LAST_FAILED_INDEX`, index, { id });
         }
 
         if (!this.watcher[id]) {
@@ -122,20 +130,22 @@ class PitCreepingHandler {
                 lastIndex,
                 api: this.api,
                 hashes: toIpfs,
-                cid: CID,
+                cid: this.cid,
                 pendingKey: PENDING_REPO_HASH,
-                shader: this.shader
+                shader: this.shader,
+                title: this.title,
+                color: this.color
             }
             this.watcher[id] = new Repo(params);
             return;
         }
 
         if (lastIndex === index) {
-            if (config.Debug) console.log(`nothing to pin in repo №${id}`);
+            this.console(`nothing to pin in repo №${id}`);
             return;
         }
 
-        store.setLastHash(LAST_FAILED_INDEX, index, { id });
+        store.setLastHash(`${this.title}-LAST_FAILED_INDEX`, index, { id });
 
 
         const hashes = [];
@@ -155,7 +165,7 @@ class PitCreepingHandler {
         const { repo_id } = repos.shift();
 
         this.api.contract(
-            `cid=${CID},role=user,action=repo_get_meta,repo_id=${repo_id}`,
+            `cid=${this.cid},role=user,action=repo_get_meta,repo_id=${repo_id}`,
             async (...args) => {
                 await this.__on_repo_meta(repo_id, ...args);
                 if (repo_id === lastRepoId) return this.__show_status();
@@ -167,10 +177,9 @@ class PitCreepingHandler {
         const arr = Object.values(this.watcher);
         const pending = arr.reduce((acc, el) => acc + Number(el.inPin), 0);
         const args = [
-            '=============C_SR3=============',
             `pending: ${pending}`,
         ].join('\n');
-        console.log(args);
+        this.console([`\n`, args].join(''));
     }
 
 }

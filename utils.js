@@ -37,7 +37,7 @@ const logger = (function () {
     const data = String(new Date()).split('(')[0];
     return function (data_to_append) {
         if (!data_to_append) debugger;
-        if (config.Debug) console.log(data_to_append);
+        // if (config.Debug) console.log(data_to_append);
         fs.appendFile(`./logs/log-${data}.txt`, `\n${data_to_append}`, (err) => {
             if (err) console.log(err);
         });

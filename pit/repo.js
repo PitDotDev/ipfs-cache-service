@@ -1,7 +1,7 @@
 const { hex2a, logger } = require('../utils');
 
 class Repo {
-    constructor({ id, lastIndex, hashes, cid, pendingKey, api, shader }) {
+    constructor({ id, lastIndex, hashes, cid, pendingKey, api, shader, color, title }) {
         this._id = id;
         this._pending_key = pendingKey;
         this._cid = cid;
@@ -9,6 +9,8 @@ class Repo {
         this._api = api;
         this._hashes = Array.from(hashes);
         this._shader = shader;
+        this._color = color;
+        this._title = title;
         this.startPin();
     }
 
@@ -24,10 +26,14 @@ class Repo {
         this.__continue_pin();
     }
 
+    console(msg) {
+        console.log(this._color, `${this._title}: ${msg}`, '\x1b[0m')
+    }
+
     __pin_meta(id, ipfs_hash) {
         this._api.call("ipfs_pin", { hash: ipfs_hash }, (err) => {
             if (err) {
-                console.log(`id ${id} hash ${ipfs_hash} failed`);
+                this.console(`id ${id} hash ${ipfs_hash} failed`);
                 return;
             };
             logger(`${ipfs_hash} pinned`);
@@ -50,7 +56,7 @@ class Repo {
             );
             return;
         }
-        console.log(`all hashes pinned in repo ${this._id}`)
+        this.console(`all hashes pinned in repo ${this._id}`)
     }
 
     addHashes(lastIndex, hashes) {

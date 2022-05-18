@@ -1,7 +1,13 @@
 const http = require('http')
 const Router = require('./router')
 const Listener = require('./listener')
-const config = require('./config')
+const config = require('./config');
+
+const Pit = require('./pit/pit');
+const Dapps = require('./dapps/dapps');
+const CreepingPit = require('./pit/creeping-pit')
+const { PitTest, CreepingPitText } = require('./source-test/source-test');
+
 
 async function main() {
     console.log("Starting IPFS cache service...")
@@ -13,11 +19,7 @@ async function main() {
 
     const status = require('./status')
 
-    const Pit = require('./pit/pit');
-    const Dapps = require('./dapps/dapps');
-    const CreepingPit = require('./pit/creeping-pit')
-
-    await new Listener().connect(Pit, CreepingPit);
+    await new Listener().connect(Pit, CreepingPit, PitTest, CreepingPitText);
 
     // setup routes
     const router = new Router();
@@ -39,5 +41,5 @@ setTimeout(() => {
         console.error(err)
         process.exit(1)
     })
-}, 10000);
+});
 
