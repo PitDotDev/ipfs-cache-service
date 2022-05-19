@@ -6,7 +6,7 @@ const config = require('./config');
 const Pit = require('./pit/pit');
 const Dapps = require('./dapps/dapps');
 const CreepingPit = require('./pit/creeping-pit')
-const { PitTest, CreepingPitText } = require('./source-test/source-test');
+const TestSource = Object.values(require('./source-test/source-test'));
 
 
 async function main() {
@@ -19,7 +19,7 @@ async function main() {
 
     const status = require('./status')
 
-    await new Listener().connect(Pit, CreepingPit, PitTest, CreepingPitText);
+    await new Listener().connect(Pit, CreepingPit, Dapps, ...TestSource);
 
     // setup routes
     const router = new Router();

@@ -143,7 +143,7 @@ class PitHandler extends Base {
 
         const { objects } = answer;
         if (!objects.length) {
-            this.console(`nothing to pin in repo №${id}`);
+            // this.console(`nothing to pin in repo №${id}`);
             return;
         }
         let index = objects.length - 1;
@@ -152,10 +152,11 @@ class PitHandler extends Base {
         try {
             lastHashId = await store.getLastHash(`${this.title}-LAST_REPO_HASH`, id);
             if (lastHashId === objects[index].object_hash) {
-                this.console(`nothing to pin in repo №${id}`);
+                // this.console(`nothing to pin in repo №${id}`);
                 return;
             }
-            this.console(`nothing to pin in repo №${id}`);
+            this.console(`something new in repo ${id}`)
+            // this.console(`nothing to pin in repo №${id}`);
             // throw new Error();
         } catch (error) {
             lastHashId = objects[index].object_hash;

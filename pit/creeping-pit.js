@@ -105,7 +105,7 @@ class PitCreepingHandler extends Base {
 
         const { objects } = answer;
         if (!objects.length) {
-            this.console(`nothing to pin in repo №${id}`);
+            // this.console(`nothing to pin in repo №${id}`);
             return;
         }
 
@@ -141,7 +141,7 @@ class PitCreepingHandler extends Base {
         }
 
         if (lastIndex === index) {
-            this.console(`nothing to pin in repo №${id}`);
+            // this.console(`nothing to pin in repo №${id}`);
             return;
         }
 
