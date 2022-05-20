@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { fatal, logger } = require('../utils');
+const Base = require('../base/base');
 
 const CID = 'c673c2b940d4f6813901165c426ab084e401259c9794d61e1f5f80453ee80317';
 const ADMIN_SHADER = path.join(__dirname, './dapps_store_admin_app.wasm');
@@ -16,27 +17,31 @@ const LAST_DAPP_HASH = "last-dapp-"
 const PENDING_DAPPS = "pending-dapp-"
 const FAILED_DAPPS = "failed-dapp-"
 
-class DappHandler {
+const args = {
+    title: 'DAPPS',
+    cid: CID,
+    color: '\x1b[34m',
+    shader: [...fs.readFileSync(SHADER)]
+}
+
+class DappHandler extends Base {
     constructor(api) {
+        super(args);
         this.api = api;
-        this.shader = [...fs.readFileSync(SHADER)];
-        this.restartPending = config.RestartPending;
         this.callQueue = [];
         this.inPin = 0;
         this.status = { pinned: 0, pending: 0, failed: 0 }
+        this.hashMap = new Map();
     }
 
     on_connect() {
         return new Promise(resolve => {
-            console.log('connect dapps...')
-
             this.api.contract(
                 `action=view`,
                 (err, res) => {
-                    console.log('dapps connected!')
                     if (err) return fatal(err)
-                    if (!res.contracts.some(el => el.cid === CID)) {
-                        return fatal(`CID not found '${CID}'`)
+                    if (!res.contracts.some(el => el.cid === this.cid)) {
+                        return fatal(`CID not found '${this.cid}'`)
                     } resolve()
                 },
                 [...fs.readFileSync(ADMIN_SHADER)]
@@ -56,19 +61,21 @@ class DappHandler {
         }
 
         if (this.restartPending) {
-            console.log('Restarting pending metas');
+            this.console('Restarting pending metas');
             this.restartPending = false;
 
             for await (const [_, val] of store.getPending(PENDING_DAPPS)) {
-                if (config.Debug) console.log(val);
-                if (val.hash) this.__add_to_queue(val.hash);
+                if (val.hash) {
+                    this.__add_to_queue(val.hash);
+                    this.console(`dapp ${val.hash} not pinned from last session`);
+                }
             }
             if (this.callQueue.length) return this.__start_pin();
         }
 
         // if (!this.callQueue.length) {
         this.api.contract(
-            `cid=${CID},action=view_dapps`,
+            `cid=${this.cid},action=view_dapps`,
             (...args) => this.__on_get_daaps(...args),
             this.shader
         )
@@ -81,28 +88,11 @@ class DappHandler {
             return;
         }
 
-        let index = dapps.length - 1;
-
-        let lastHash;
-        try {
-            lastHash = await store.getLastHash(LAST_DAPP_HASH);
-            // throw new Error();
-        } catch (error) {
-            lastHash = null;
-        }
-
-        if (lastHash === dapps[index].ipfs_id) {
-            if (config.Debug) console.log('nothing to pin in dapps');
-            return this.__show_status();
-        }
-
-        store.setLastHash(LAST_DAPP_HASH, dapps[index].ipfs_id);
-
-        while (index >= 0 && dapps[index].ipfs_id !== lastHash) {
-            this.__add_to_queue(dapps[index].ipfs_id);
-            index--;
-        }
-
+        dapps.forEach((el) => {
+            if (!this.hashMap.has(el.ipfs_id)) {
+                this.__add_to_queue(el.ipfs_id);
+            }
+        });
         this.__start_pin();
     }
 
@@ -122,9 +112,12 @@ class DappHandler {
             }
 
             store.removePending(PENDING_DAPPS, hash);
+            this.hashMap.set(hash, 1);
             this.status.pending--;
             this.status.pinned++;
-            logger(`dapp ${hash} successfully pinned`);
+            const msg = `dapp ${hash} successfully pinned!`;
+            this.console(msg);
+            logger(msg);
             return;
         }, this.shader);
     }
@@ -133,7 +126,7 @@ class DappHandler {
     __start_pin() {
         const queue = this.callQueue.shift();
         if (queue) {
-            if (config.Debug) console.log('=============NEXT_QUEUE=============')
+            this.console('=============NEXT_QUEUE=============')
             this.inPin = queue.length;
             return queue.forEach(hash => this.__pin_dapp(hash));
         }
@@ -142,19 +135,19 @@ class DappHandler {
 
     __show_status() {
         const args = [
-            '=============DAPPS=============',
             `pending: ${this.status.pending}`,
             `pinned: ${this.status.pinned}`,
             `failed: ${this.status.failed}`
         ].join('\n');
-        console.log(args);
+        this.console(['\n', args].join(''));
     }
 
     __add_to_queue(hash) {
         const { length } = this.callQueue;
         if (!length || this.callQueue[length - 1].length === MAX_CALL) {
-            this.callQueue.push(new Array())
+            this.callQueue.push(new Array());
         };
+        this.hashMap.set(hash, 0);
         this.callQueue[this.callQueue.length - 1].push(hash);
     }
 
