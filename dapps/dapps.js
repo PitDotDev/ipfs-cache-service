@@ -31,6 +31,7 @@ class DappHandler extends Base {
         this.callQueue = [];
         this.inPin = 0;
         this.status = { pinned: 0, pending: 0, failed: 0 }
+        this.hashMap = new Map();
     }
 
     on_connect() {
@@ -87,29 +88,41 @@ class DappHandler extends Base {
             return;
         }
 
-        let index = dapps.length - 1;
-
-        let lastHash;
-        try {
-            lastHash = await store.getLastHash(LAST_DAPP_HASH);
-            // throw new Error();
-        } catch (error) {
-            lastHash = null;
-        }
-
-        if (lastHash === dapps[index].ipfs_id) {
-            this.console('nothing to pin in dapps');
-            return this.__show_status();
-        }
-
-        store.setLastHash(LAST_DAPP_HASH, dapps[index].ipfs_id);
-
-        while (index >= 0 && dapps[index].ipfs_id !== lastHash) {
-            this.__add_to_queue(dapps[index].ipfs_id);
-            index--;
-        }
-
+        dapps.forEach((el) => {
+            if (!this.hashMap.has(el.ipfs_id)) {
+                this.__add_to_queue(el.ipfs_id);
+            }
+        });
         this.__start_pin();
+
+        // if (err) {
+        //     logger(err.message);
+        //     return;
+        // }
+
+        // let index = dapps.length - 1;
+
+        // let lastHash;
+        // try {
+        //     lastHash = await store.getLastHash(LAST_DAPP_HASH);
+        //     // throw new Error();
+        // } catch (error) {
+        //     lastHash = null;
+        // }
+
+        // if (lastHash === dapps[index].ipfs_id) {
+        //     this.console('nothing to pin in dapps');
+        //     return this.__show_status();
+        // }
+
+        // store.setLastHash(LAST_DAPP_HASH, dapps[index].ipfs_id);
+
+        // while (index >= 0 && dapps[index].ipfs_id !== lastHash) {
+        //     this.__add_to_queue(dapps[index].ipfs_id);
+        //     index--;
+        // }
+
+        // this.__start_pin();
     }
 
     __pin_dapp(hash) {
@@ -128,6 +141,7 @@ class DappHandler extends Base {
             }
 
             store.removePending(PENDING_DAPPS, hash);
+            this.hashMap.set(hash, 1);
             this.status.pending--;
             this.status.pinned++;
             logger(`dapp ${hash} successfully pinned`);
@@ -158,8 +172,9 @@ class DappHandler extends Base {
     __add_to_queue(hash) {
         const { length } = this.callQueue;
         if (!length || this.callQueue[length - 1].length === MAX_CALL) {
-            this.callQueue.push(new Array())
+            this.callQueue.push(new Array());
         };
+        this.hashMap.set(hash, 0);
         this.callQueue[this.callQueue.length - 1].push(hash);
     }
 

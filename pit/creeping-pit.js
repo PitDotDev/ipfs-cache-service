@@ -137,13 +137,11 @@ class PitCreepingHandler extends Base {
                 color: this.color
             }
             this.watcher[id] = new Repo(params);
+            this.console(`created watcher for repo №${id}`)
             return;
         }
 
-        if (lastIndex === index) {
-            // this.console(`nothing to pin in repo №${id}`);
-            return;
-        }
+        if (lastIndex === index) return;
 
         store.setLastHash(`${this.title}-LAST_FAILED_INDEX`, index, { id });
 

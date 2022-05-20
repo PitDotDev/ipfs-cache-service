@@ -23,7 +23,7 @@ class PitTest extends Pit {
     on_connect = connect;
 }
 
-class CreepingPitText extends CreepingPit {
+class CreepingPitTest extends CreepingPit {
     constructor(api) {
         super(api);
         this.cid = CID;
@@ -35,4 +35,4 @@ class CreepingPitText extends CreepingPit {
 
 }
 
-module.exports = { PitTest, CreepingPitText }
+module.exports = { PitTest, CreepingPitTest }
