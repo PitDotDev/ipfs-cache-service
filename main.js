@@ -4,7 +4,6 @@ const Listener = require('./listener')
 const config = require('./config');
 
 const Pit = require('./pit/pit');
-const Dapps = require('./dapps/dapps');
 const CreepingPit = require('./pit/creeping-pit')
 const TestSource = Object.values(require('./source-test/source-test'));
 
@@ -19,7 +18,7 @@ async function main() {
 
     const status = require('./status')
 
-    await new Listener().connect(Pit, CreepingPit, Dapps, ...TestSource);
+    await new Listener().connect(Pit, CreepingPit, ...TestSource);
 
     // setup routes
     const router = new Router();
@@ -35,11 +34,11 @@ async function main() {
     const server = http.createServer((...args) => router.route(...args))
     server.listen(config.Port)
 }
-setTimeout(() => {
-    main().catch(err => {
-        console.error("IPFS cache service critical failure. The following error has been reported:")
-        console.error(err)
-        process.exit(1)
-    })
+// setTimeout(() => {
+main().catch(err => {
+    console.error("IPFS cache service critical failure. The following error has been reported:")
+    console.error(err)
+    process.exit(1)
 });
+// });
 
