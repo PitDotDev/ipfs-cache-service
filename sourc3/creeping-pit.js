@@ -6,7 +6,6 @@ const fs = require('fs');
 const path = require('path');
 const { fatal, hex2a, logger } = require('../utils');
 const Base = require('../base/base');
-const { runInThisContext } = require('vm');
 
 const CID = '7aaec975d0348348d82e72bd66d508ac93cb6f9e683bd136d2a879f41c32e8d8';
 const SHADER = path.join(__dirname, './app.wasm');
