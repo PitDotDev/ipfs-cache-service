@@ -11,8 +11,8 @@ const CID = '7aaec975d0348348d82e72bd66d508ac93cb6f9e683bd136d2a879f41c32e8d8';
 const SHADER = path.join(__dirname, './app.wasm');
 const START_POINT = 0;
 
-const PENDING_REPO_HASH = "pending-repo-"
-const LAST_FAILED_INDEX = "last-failed-index-"
+// const PENDING_REPO_HASH = "pending-repo-"
+// const LAST_FAILED_INDEX = "last-failed-index-"
 
 const args = {
     cid: CID,
@@ -23,6 +23,7 @@ const args = {
 class PitCreepingHandler extends Base {
     constructor(api) {
         super(args)
+        this.hashMap = new Map();
         this.api = api;
         this.watcher = {};
         this.inPin = 0;
@@ -68,10 +69,10 @@ class PitCreepingHandler extends Base {
             (err, { object_data }) => {
                 if (err) {
                     this.status.failed++;
-                    store.registerFailed(`${this.title}-FAILED_REPO`, git_hash, { id, index });
+                    // store.registerFailed(`${this.title}-FAILED_REPO`, git_hash, { id, index });
                     return logger(`${this.title}: Failed to load repo data:\n\t${err}`);
                 }
-                store.registerPending(`${this.title}-PENDING_REPO_HASH`, git_hash, { id, index });
+                // store.registerPending(`${this.title}-PENDING_REPO_HASH`, git_hash, { id, index });
                 const ipfs_hash = hex2a(object_data);
                 this.__pin_meta(id, ipfs_hash, git_hash, index);
             }, this.shader);
@@ -96,64 +97,62 @@ class PitCreepingHandler extends Base {
         )
     }
 
-    async __on_repo_meta(id, err, answer) {
+    async __on_repo_meta(id, err, response) {
         if (err) {
             logger(`${this.title}: err.message`);
             return;
         }
 
-        const { objects } = answer;
+        const { objects } = response;
+
+        const count = this.hashMap.get(id);
+        if (!count) this.hashMap.set(id, objects.length);
+
         if (!objects.length) {
             // this.console(`nothing to pin in repo №${id}`);
             return;
         }
-
-        let index = objects.length - 1;
-
-        let lastIndex;
-        try {
-            lastIndex = await store.getLastHash(`${this.title}-LAST_FAILED_INDEX`, id);
-            // throw new Error();
-        } catch (error) {
-            lastIndex = index;
-            store.setLastHash(`${this.title}-LAST_FAILED_INDEX`, index, { id });
-        }
+        if (count === objects.length) return;
+        // let lastIndex;
+        // try {
+        //     lastIndex = await store.getLastHash(`${this.title}-LAST_FAILED_INDEX`, id);
+        //     // throw new Error();
+        // } catch (error) {
+        //     lastIndex = index;
+        //     store.setLastHash(`${this.title}-LAST_FAILED_INDEX`, index, { id });
+        // }
 
         if (!this.watcher[id]) {
-            const toIpfs = objects
+            const toIpfs = new Set(objects
                 .filter((el) => el.object_type & 0x80)
-                .map((el) => el.object_hash);
+                .map((el) => el.object_hash)
+            );
 
             const params = {
                 id,
-                lastIndex,
+                // lastIndex,
                 api: this.api,
                 hashes: toIpfs,
                 cid: this.cid,
-                pendingKey: PENDING_REPO_HASH,
                 shader: this.shader,
                 title: this.title,
                 color: this.color
             }
             this.watcher[id] = new Repo(params);
-            this.console(`created watcher for repo №${id}`)
+            // this.console(`created watcher for repo №${id}`)
             return;
         }
 
-        if (lastIndex === index) return;
+        // if (lastIndex === index) return;
 
-        store.setLastHash(`${this.title}-LAST_FAILED_INDEX`, index, { id });
+        // store.setLastHash(`${this.title}-LAST_FAILED_INDEX`, index, { id });
 
 
-        const hashes = [];
+        const toIpfs = objects
+            .filter((el) => el.object_type & 0x80)
+            .map((el) => el.object_hash);
 
-        for (let i = lastIndex; i < index; i++) {
-            if (objects[i].object_type & 0x80) {
-                hashes.push(objects[i].object_hash)
-            }
-        }
-
-        this.watcher[id].addHashes(index, hashes);
+        this.watcher[id].addHashes(toIpfs);
         if (!this.watcher[id].inPin) this.watcher[id].startPin();
 
     }

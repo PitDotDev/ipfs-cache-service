@@ -53,6 +53,14 @@ class Store {
     __del_async(key) {
         this.db.del(key, err => fatal(err))
     }
+    //sourc3
+    setRepoStatus(key, val) {
+        return this.__put_async(key, val);
+    }
+
+    getRepoStatus(key) {
+        return this.__get(key);
+    }
     // Pit
     setLastHash(prefix, value, params) {
         const arr = params ? Object.values(params) : []

@@ -35,4 +35,4 @@ class CreepingPitDemo extends CreepingPit {
 
 }
 
-module.exports = { PitDemo, CreepingPitDemo }
+module.exports = { CreepingPitDemo }

@@ -20,6 +20,8 @@ async function main() {
     // setup routes
     const router = new Router();
 
+    router.register("/repo", (...args) => status.getRepoStatus(...args))
+
     router.register("/status", (...args) => status.report(...args))
     router.register("/", (req, res) => {
         res.writeHead(200);
