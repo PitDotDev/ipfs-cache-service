@@ -68,7 +68,8 @@ class Repo {
             return;
         }
         store.setRepoStatus(this._dbKey, this.__create_status(false))
-        this.console(`all hashes pinned in repo ${this._id}`)
+        this.console(`all hashes pinned in repo ${this._id}`);
+        logger(`all hashes pinned in repo ${this._id}`);
     }
 
     __last_key() {
