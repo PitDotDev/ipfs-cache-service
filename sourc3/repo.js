@@ -32,6 +32,7 @@ class Repo {
         this.__continue_pin();
         store.setRepoStatus(this._dbKey, this.__create_status(true))
         this.console(`something new in repo ${this._id}`);
+        this.logger(`something new in repo ${this._id}`);
     }
 
     console(msg) {
@@ -39,13 +40,14 @@ class Repo {
     }
 
     __pin_meta(id, ipfs_hash, gitHash) {
+        logger(`repo-${this._id} ${gitHash} ${ipfs_hash} start pin`);
         this._api.call('ipfs_pin', { hash: ipfs_hash }, (err) => {
             if (err) {
                 this.console(`id ${id} hash ${ipfs_hash} failed`);
                 return;
             };
             this._hashes.delete(gitHash);
-            logger(`${ipfs_hash} pinned`);
+            logger(`repo-${this._id} ${gitHash} ${ipfs_hash} successfuly pinned`);
             this.__continue_pin();
         });
     }
@@ -53,10 +55,10 @@ class Repo {
     __continue_pin() {
         const gitHash = this.__last_key();
         if (gitHash) {
-            this._api.contract(`cid=${this._cid},role=user,action=repo_get_data,repo_id=${this._id},obj_id=${gitHash}`,
+            this._api.contract(`cid = ${this._cid}, role = user, action = repo_get_data, repo_id = ${this._id}, obj_id = ${gitHash}`,
                 (err, { object_data }) => {
                     if (err) {
-                        logger(`Failed to load repo data:\n\t${err}`);
+                        logger(`Failed to load repo data: \n\t${err}`);
                         return
                     }
                     const ipfs_hash = hex2a(object_data);
@@ -75,6 +77,8 @@ class Repo {
 
     addHashes(hashes) {
         hashes.forEach((el) => this._hashes.add(el));
+        this.console(`something new in repo ${this._id}`);
+        this.logger(`something new in repo ${this._id}`);
     }
 }
 
