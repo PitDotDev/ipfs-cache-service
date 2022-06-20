@@ -32,7 +32,7 @@ class Repo {
         this.__continue_pin();
         store.setRepoStatus(this._dbKey, this.__create_status(true))
         this.console(`something new in repo ${this._id}`);
-        this.logger(`something new in repo ${this._id}`);
+        logger(`something new in repo ${this._id}`);
     }
 
     console(msg) {
@@ -78,7 +78,7 @@ class Repo {
     addHashes(hashes) {
         hashes.forEach((el) => this._hashes.add(el));
         this.console(`something new in repo ${this._id}`);
-        this.logger(`something new in repo ${this._id}`);
+        logger(`something new in repo ${this._id}`);
     }
 }
 
