@@ -13,11 +13,12 @@ class Repo {
         this._color = color;
         this._title = title;
         this._dbKey = [PENDING_REPO, this._cid, this._id].join('-');
+        this._inPin = false;
         this.startPin();
     }
 
     get inPin() {
-        return Boolean(this._hashes.size);
+        return this._inPin;
     }
 
     __create_status(is_pending) {
@@ -29,6 +30,7 @@ class Repo {
     }
 
     startPin() {
+        this._inPin = true;
         this.__continue_pin();
         store.setRepoStatus(this._dbKey, this.__create_status(true))
         this.console(`something new in repo ${this._id}`);
@@ -70,6 +72,7 @@ class Repo {
         store.setRepoStatus(this._dbKey, this.__create_status(false))
         this.console(`all hashes pinned in repo ${this._id}`);
         logger(`all hashes pinned in repo ${this._id}`);
+        this._inPin = false;
     }
 
     __last_key() {
