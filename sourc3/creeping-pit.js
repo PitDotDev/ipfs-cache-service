@@ -113,6 +113,8 @@ class PitCreepingHandler extends Base {
             return;
         }
         if (count === objects.length) return;
+        this.hashMap.set(id, objects.length); //TODO: not cool solution
+
         // let lastIndex;
         // try {
         //     lastIndex = await store.getLastHash(`${this.title}-LAST_FAILED_INDEX`, id);
