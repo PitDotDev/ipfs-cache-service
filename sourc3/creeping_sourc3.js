@@ -7,7 +7,7 @@ const path = require('path');
 const { fatal, hex2a, logger } = require('../utils');
 const Base = require('../base/base');
 
-const CID = '7aaec975d0348348d82e72bd66d508ac93cb6f9e683bd136d2a879f41c32e8d8';
+const CID = '17885447b4c5f78b65ac01bfa5d63d6bc2dd7b239c6cd7ef57a918adba2071d3';
 const SHADER = path.join(__dirname, './app.wasm');
 const START_POINT = 0;
 
@@ -37,9 +37,10 @@ class PitCreepingHandler extends Base {
                 `role=manager,action=view_contracts`,
                 (err, res) => {
                     if (err) return fatal(err)
-                    if (!res.contracts.some(el => el.cid === this.cid)) {
-                        return fatal(`CID not found '${this.cid}'`)
-                    } resolve()
+                    // if (!res.contracts.some(el => el.cid === this.cid)) {
+                    //     return fatal(`CID not found '${this.cid}'`)
+                    // }
+                    resolve()
                 }, this.shader
             )
         })
@@ -58,8 +59,7 @@ class PitCreepingHandler extends Base {
 
         this.api.contract(
             `cid=${this.cid},role=user,action=all_repos`,
-            (...args) => this.__on_get_repos(...args),
-            this.shader
+            (...args) => this.__on_get_repos(...args)
         )
     }
 
@@ -75,7 +75,7 @@ class PitCreepingHandler extends Base {
                 // store.registerPending(`${this.title}-PENDING_REPO_HASH`, git_hash, { id, index });
                 const ipfs_hash = hex2a(object_data);
                 this.__pin_meta(id, ipfs_hash, git_hash, index);
-            }, this.shader);
+            });
 
     }
 
@@ -92,8 +92,7 @@ class PitCreepingHandler extends Base {
     __on_get_meta() {
         this.api.contract(
             `cid=${this.cid},role=user,action=repo_get_meta,repo_id=${repo_id}`,
-            (...args) => this.__on_repo_meta(repo_id, ...args),
-            this.shader
+            (...args) => this.__on_repo_meta(repo_id, ...args)
         )
     }
 
@@ -136,7 +135,6 @@ class PitCreepingHandler extends Base {
                 api: this.api,
                 hashes: toIpfs,
                 cid: this.cid,
-                shader: this.shader,
                 title: this.title,
                 color: this.color
             }
@@ -168,7 +166,7 @@ class PitCreepingHandler extends Base {
                 await this.__on_repo_meta(repo_id, ...args);
                 if (repo_id === lastRepoId) return this.__show_status();
                 this.__build_queue(repos, lastRepoId)
-            }, this.shader)
+            })
     }
 
     __show_status() {

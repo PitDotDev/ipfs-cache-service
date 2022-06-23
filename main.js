@@ -2,7 +2,7 @@ const http = require('http')
 const Router = require('./router')
 const Listener = require('./listener')
 const config = require('./config');
-const DappNetSourc3 = Object.values(require('./sourc3-dappnet/source-demo'));
+const Sourc3 = require('./sourc3/creeping_sourc3');
 
 
 async function main() {
@@ -15,7 +15,7 @@ async function main() {
 
     const status = require('./status')
 
-    await new Listener().connect(...DappNetSourc3);
+    await new Listener().connect(Sourc3);
 
     // setup routes
     const router = new Router();

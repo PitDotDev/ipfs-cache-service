@@ -2,6 +2,7 @@ const net = require('net')
 const status = require('./status')
 const config = require('./config')
 const EventEmitter = require('events')
+const { logger } = require('./utils')
 
 class WalletApi extends EventEmitter {
     constructor(address, interval) {
@@ -58,7 +59,8 @@ class WalletApi extends EventEmitter {
     }
 
     __on_closed() {
-        console.log("Wallet API connection closed. Will try to reconnect in", this.reconnectInterval)
+        console.log("Wallet API connection closed. Will try to reconnect in", this.reconnectInterval);
+        logger(`Wallet API connection closed. Will try to reconnect in ${this.reconnectInterval}`);
         status.WalletAPI.connected = false
 
         setTimeout(() => {

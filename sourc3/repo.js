@@ -4,12 +4,11 @@ const store = require('../store');
 const PENDING_REPO = "pending-repo"
 
 class Repo {
-    constructor({ id, hashes, cid, api, shader, color, title }) {
+    constructor({ id, hashes, cid, api, color, title }) {
         this._id = id;
         this._cid = cid;
         this._api = api;
         this._hashes = hashes;
-        this._shader = shader;
         this._color = color;
         this._title = title;
         this._dbKey = [PENDING_REPO, this._cid, this._id].join('-');
@@ -45,7 +44,8 @@ class Repo {
         logger(`repo-${this._id} ${gitHash} ${ipfs_hash} start pin`);
         this._api.call('ipfs_pin', { hash: ipfs_hash }, (err) => {
             if (err) {
-                this.console(`id ${id} hash ${ipfs_hash} failed`);
+                this.console(`${this._dbKey} failed`);
+                logger(`${this._dbKey} failed`);
                 return;
             };
             this._hashes.delete(gitHash);
@@ -60,12 +60,13 @@ class Repo {
             this._api.contract(`cid = ${this._cid}, role = user, action = repo_get_data, repo_id = ${this._id}, obj_id = ${gitHash}`,
                 (err, { object_data }) => {
                     if (err) {
+                        this.console(`Failed to load repo data: \n\t${err}`)
                         logger(`Failed to load repo data: \n\t${err}`);
                         return
                     }
                     const ipfs_hash = hex2a(object_data);
                     this.__pin_meta(this._id, ipfs_hash, gitHash);
-                }, this._shader
+                }
             );
             return;
         }

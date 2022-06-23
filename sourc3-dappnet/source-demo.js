@@ -1,6 +1,6 @@
 
 const Pit = require('../sourc3/pit');
-const CreepingPit = require('../sourc3/creeping-pit')
+const CreepingPit = require('../sourc3/creeping_sourc3')
 const fs = require('fs')
 const path = require('path');
 
