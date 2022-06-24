@@ -111,7 +111,7 @@ class PitCreepingHandler extends Base {
             // this.console(`nothing to pin in repo №${id}`);
             return;
         }
-        if (count === objects.length) return;
+        if (count === objects.length && !this.restartPending) return;
         this.hashMap.set(id, objects.length); //TODO: not cool solution
 
         // let lastIndex;
@@ -153,8 +153,7 @@ class PitCreepingHandler extends Base {
             .map((el) => el.object_hash);
 
         this.watcher[id].addHashes(toIpfs);
-        if (!this.watcher[id].inPin) this.watcher[id].startPin();
-
+        if (this.restartPending || !this.watcher[id].inPin) this.watcher[id].startPin();
     }
 
     async __build_queue(repos, lastRepoId) {
@@ -176,6 +175,7 @@ class PitCreepingHandler extends Base {
             `pending: ${pending}`,
         ].join('\n');
         this.console([`\n`, args].join(''));
+        if (this.restartPending) this.restartPending = false;
     }
 
 }

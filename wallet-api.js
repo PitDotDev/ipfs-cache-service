@@ -61,6 +61,7 @@ class WalletApi extends EventEmitter {
     __on_closed() {
         console.log("Wallet API connection closed. Will try to reconnect in", this.reconnectInterval);
         logger(`Wallet API connection closed. Will try to reconnect in ${this.reconnectInterval}`);
+        this.emit("close");
         status.WalletAPI.connected = false
 
         setTimeout(() => {

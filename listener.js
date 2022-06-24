@@ -10,16 +10,17 @@ class Listener {
         args.forEach((Element) => {
             const instance = new Element(this.api);
             this.__attach(instance.on_api_result.bind(instance));
-            connects.push(instance.on_connect.bind(instance));
+            connects.push(instance);
         });
 
         this.api.on('connect', () => this.__on_connect(connects));
         this.api.on('result', (...args) => this.__on_api_result(...args));
+        this.api.on('close', () => connects.forEach(el => { el.restartPending = true }));
         await this.api.connect();
     }
 
     async __on_connect(connects) {
-        await Promise.all(connects.map(el => el()));
+        await Promise.all(connects.map(el => el.on_connect()));
         this.api.call("ev_subunsub", { ev_system_state: true }, (err, res) => {
             if (err) return fatal(err);
 
