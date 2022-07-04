@@ -14,7 +14,7 @@ class Config {
         this.DBFolder = 'data.db'
         this.RestartPending = true
         this.WalletAPI = {
-            Address: "127.0.0.1:9100",
+            Address: "127.0.0.1:10005",
             ReconnectInterval: 5000
         }
 
