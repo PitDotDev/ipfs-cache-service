@@ -16,7 +16,7 @@ const START_POINT = 0;
 
 const args = {
     cid: CID,
-    title: 'C_SR3',
+    title: 'SOURC3',
     shader: [...fs.readFileSync(SHADER)]
 }
 

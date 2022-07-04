@@ -3,7 +3,7 @@ const Router = require('./router')
 const Listener = require('./listener')
 const config = require('./config');
 const Sourc3 = require('./sourc3/creeping_sourc3');
-
+const Demo = require('./sourc3-demo/source-demo');
 
 async function main() {
     console.log("Starting IPFS cache service...")
@@ -15,7 +15,7 @@ async function main() {
 
     const status = require('./status')
 
-    await new Listener().connect(Sourc3);
+    await new Listener().connect(Sourc3, Demo);
 
     // setup routes
     const router = new Router();

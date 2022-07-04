@@ -33,7 +33,7 @@ class Repo {
         this.__continue_pin();
         store.setRepoStatus(this._dbKey, this.__create_status(true))
         this.console(`something new in repo ${this._id}`);
-        logger(`something new in repo ${this._id}`);
+        logger(`${this._title} something new in repo ${this._id}`);
     }
 
     console(msg) {
@@ -41,15 +41,15 @@ class Repo {
     }
 
     __pin_meta(id, ipfs_hash, gitHash) {
-        logger(`repo-${this._id} ${gitHash} ${ipfs_hash} start pin`);
+        logger(`${this._title} repo-${this._id} ${gitHash} ${ipfs_hash} start pin`);
         this._api.call('ipfs_pin', { hash: ipfs_hash }, (err) => {
             if (err) {
                 this.console(`${this._dbKey} failed`);
-                logger(`${this._dbKey} failed`);
+                logger(`${this._title} ${this._dbKey} failed`);
                 return;
             };
             this._hashes.delete(gitHash);
-            logger(`repo-${this._id} ${gitHash} ${ipfs_hash} successfuly pinned`);
+            logger(`${this._title} repo-${this._id} ${gitHash} ${ipfs_hash} successfuly pinned`);
             this.__continue_pin();
         });
     }
@@ -61,7 +61,7 @@ class Repo {
                 (err, { object_data }) => {
                     if (err) {
                         this.console(`Failed to load repo data: \n\t${err}`)
-                        logger(`Failed to load repo data: \n\t${err}`);
+                        logger(`${this._title} Failed to load repo data: \n\t${err}`);
                         return
                     }
                     const ipfs_hash = hex2a(object_data);
@@ -72,7 +72,7 @@ class Repo {
         }
         store.setRepoStatus(this._dbKey, this.__create_status(false))
         this.console(`all hashes pinned in repo ${this._id}`);
-        logger(`all hashes pinned in repo ${this._id}`);
+        logger(`${this._title} all hashes pinned in repo ${this._id}`);
         this._inPin = false;
     }
 
@@ -83,7 +83,7 @@ class Repo {
     addHashes(hashes) {
         hashes.forEach((el) => this._hashes.add(el));
         this.console(`something new in repo ${this._id}`);
-        logger(`something new in repo ${this._id}`);
+        logger(`${this._title} something new in repo ${this._id}`);
     }
 }
 
