@@ -28,17 +28,24 @@ function hex2a(hexx) {
     return str;
 }
 
+function getTimestamp () {
+    const pad = (n,s=2) => (`${new Array(s).fill(0)}${n}`).slice(-s);
+    const d = new Date();
+    
+    return `${pad(d.getFullYear(),4)}-${pad(d.getMonth()+1)}-${pad(d.getDate())}-${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+  }
+
 
 const logger = (function () {
     const dir = path.join(__dirname, './logs')
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
     }
-    const data = String(new Date()).split('(')[0];
+    const filepath = `./logs/log-${getTimestamp()}.txt`
     return function (data_to_append) {
         if (!data_to_append) debugger;
         // if (config.Debug) console.log(data_to_append);
-        fs.appendFile(`./logs/log-${data}.txt`, `\n${data_to_append}`, (err) => {
+        fs.appendFile(filepath, `\n${data_to_append}`, (err) => {
             if (err) console.log(err);
         });
     }
