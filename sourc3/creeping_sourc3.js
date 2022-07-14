@@ -1,4 +1,3 @@
-const config = require('../config');
 const status = require('../status');
 const store = require('../store');
 const Repo = require('./repo');
@@ -10,6 +9,7 @@ const Base = require('../base/base');
 const CID = '17885447b4c5f78b65ac01bfa5d63d6bc2dd7b239c6cd7ef57a918adba2071d3';
 const SHADER = path.join(__dirname, './app.wasm');
 const START_POINT = 0;
+const PENDING_REPO = "pending-repo";
 
 // const PENDING_REPO_HASH = "pending-repo-"
 // const LAST_FAILED_INDEX = "last-failed-index-"
@@ -79,7 +79,8 @@ class PitCreepingHandler extends Base {
 
     }
 
-    async __on_get_repos(err, { repos }) {
+    async __on_get_repos(err, obj) {
+        const repos = obj.repos;
         if (err) return this.console(`Failed to load repo meta:\n\t${err}`);
 
         if (!repos.length) return this.console('no repos in contract');
@@ -111,6 +112,12 @@ class PitCreepingHandler extends Base {
             // this.console(`nothing to pin in repo №${id}`);
             return;
         }
+        const dbKey = [PENDING_REPO, this.cid, id].join('-');
+        try {
+            const repoStatus = await store.getRepoStatus(dbKey);
+            if (objects.length === repoStatus.count && this.restartPending) return;
+        } catch (error) { this.console(`repo ${id} not found in local database`) }
+
         if (count === objects.length && !this.restartPending) return;
         this.hashMap.set(id, objects.length); //TODO: not cool solution
 
@@ -131,12 +138,13 @@ class PitCreepingHandler extends Base {
 
             const params = {
                 id,
-                // lastIndex,
+                dbKey,
                 api: this.api,
                 hashes: toIpfs,
                 cid: this.cid,
                 title: this.title,
-                color: this.color
+                color: this.color,
+                count: objects.length
             }
             this.watcher[id] = new Repo(params);
             // this.console(`created watcher for repo №${id}`)
@@ -152,7 +160,7 @@ class PitCreepingHandler extends Base {
             .filter((el) => el.object_type & 0x80)
             .map((el) => el.object_hash);
 
-        this.watcher[id].addHashes(toIpfs);
+        this.watcher[id].addHashes(toIpfs, objects.length);
         if (this.restartPending || !this.watcher[id].inPin) this.watcher[id].startPin();
     }
 
