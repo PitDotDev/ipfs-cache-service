@@ -72,6 +72,7 @@ class Repo {
             );
             return;
         }
+        this._inPin = false;
         let status = {};
         try {
             status = await store.getRepoStatus(this._dbKey);
@@ -79,7 +80,6 @@ class Repo {
         store.setRepoStatus(this._dbKey, { ...status, ... this.__create_status(false, 1) })
         this.console(`all hashes pinned in repo ${this._id}`);
         logger(`${this._title} all hashes pinned in repo ${this._id}`);
-        this._inPin = false;
     }
 
     __last_key() {
