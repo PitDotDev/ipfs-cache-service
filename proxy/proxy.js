@@ -4,6 +4,8 @@ const request = require('request');
 
 const PORT = 14000;
 
+const CACHE_PORT = 13000;
+
 const TIMEOUT = 5000;
 
 const networks = new Map()
@@ -16,6 +18,31 @@ app.use(cors());
 
 app.get('/', (_, res) => {
     res.send('beam-proxi is running!');
+})
+
+app.get('/status', (req, res) => {
+    try {
+        const { secret } = req.query;
+        if (!secret) throw new Error();
+        const options = {
+            uri: [`${networks.get('dappnet')}:${CACHE_PORT}`, `status?secret=${secret}`].join('/'),
+        };
+        request(options,
+            function (err, _, body) {
+                if (err) {
+                    return res.status(404)
+                        .set('Content-Type', 'application/json')
+                        .send({ message: err.code === 'ESOCKETTIMEDOUT' ? 'timeout' : 'secret error' })
+                }
+                return res
+                    .set('Content-Type', 'application/json')
+                    .send(body);
+            });
+    } catch (err) {
+        if (err) return res.status(404)
+            .set('Content-Type', 'application/json')
+            .send({ message: 'secret key error' })
+    }
 })
 
 app.get('/ipfs/:network/:id', (req, res) => {

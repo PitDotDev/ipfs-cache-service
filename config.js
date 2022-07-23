@@ -18,6 +18,8 @@ class Config {
             ReconnectInterval: 5000
         }
 
+        this.Contracts = {}
+
         let raw = fs.readFileSync(fname)
         let parsed = JSON.parse(raw.toString())
         Object.assign(this, parsed)

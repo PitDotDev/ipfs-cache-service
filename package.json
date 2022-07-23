@@ -4,6 +4,7 @@
   "main": "main.js",
   "scripts": {
     "start": "node --inspect main.js ",
+    "proxy": "node --inspect=7000 proxy/proxy.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

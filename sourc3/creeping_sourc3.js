@@ -23,6 +23,7 @@ const args = {
 class PitCreepingHandler extends Base {
     constructor(api) {
         super(args)
+        this.inProgress = false;
         this.hashMap = new Map();
         this.api = api;
         this.watcher = {};
@@ -47,6 +48,7 @@ class PitCreepingHandler extends Base {
     }
 
     on_api_result(res) {
+        if (this.inProgress) return;
         return this.__on_system_state(res);
     }
 
@@ -56,7 +58,7 @@ class PitCreepingHandler extends Base {
             // we're not in sync, wait
             return
         }
-
+        this.inProgress = true;
         this.api.contract(
             `cid=${this.cid},role=user,action=all_repos`,
             (...args) => this.__on_get_repos(...args)
@@ -113,10 +115,14 @@ class PitCreepingHandler extends Base {
             return;
         }
         const dbKey = [PENDING_REPO, this.cid, id].join('-');
+        let repoStatus = {};
         try {
-            const repoStatus = await store.getRepoStatus(dbKey);
+            repoStatus = await store.getRepoStatus(dbKey);
             if (objects.length === repoStatus.count && this.restartPending) return;
-        } catch (error) { this.console(`repo ${id} not found in local database`) }
+        } catch (error) {
+            repoStatus.count = 0;
+            this.console(`repo ${id} not found in local database`);
+        }
 
         if (count === objects.length && !this.restartPending) return;
         this.hashMap.set(id, objects.length); //TODO: not cool solution
@@ -129,9 +135,9 @@ class PitCreepingHandler extends Base {
         //     lastIndex = index;
         //     store.setLastHash(`${this.title}-LAST_FAILED_INDEX`, index, { id });
         // }
-
         if (!this.watcher[id]) {
             const toIpfs = new Set(objects
+                .slice(repoStatus.count)
                 .filter((el) => el.object_type & 0x80)
                 .map((el) => el.object_hash)
             );
@@ -157,6 +163,7 @@ class PitCreepingHandler extends Base {
 
 
         const toIpfs = objects
+            .slice(repoStatus.count)
             .filter((el) => el.object_type & 0x80)
             .map((el) => el.object_hash);
 
@@ -183,6 +190,8 @@ class PitCreepingHandler extends Base {
             `pending: ${pending}`,
         ].join('\n');
         this.console([`\n`, args].join(''));
+        status.Config.Contracts[this.title] = args;
+        this.inProgress = false;
         if (this.restartPending) this.restartPending = false;
     }
 

@@ -15,7 +15,10 @@ class Listener {
 
         this.api.on('connect', () => this.__on_connect(connects));
         this.api.on('result', (...args) => this.__on_api_result(...args));
-        this.api.on('close', () => connects.forEach(el => { el.restartPending = true }));
+        this.api.on('close', () => connects.forEach(el => {
+            el.restartPending = true;
+            el.inProgress = false;
+        }));
         await this.api.connect();
     }
 

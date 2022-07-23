@@ -34,8 +34,8 @@ class Repo {
         this._inPin = true;
         this.__continue_pin();
         store.setRepoStatus(this._dbKey, this.__create_status(true))
-        this.console(`something new in repo ${this._id}`);
-        logger(`${this._title} something new in repo ${this._id}`);
+        this.console(`start pinning in repo ${this._id}`);
+        logger(`${this._title} start pinning in repo ${this._id}`);
     }
 
     console(msg) {
@@ -88,9 +88,11 @@ class Repo {
 
     addHashes(hashes, count) {
         hashes.forEach((el) => this._hashes.add(el));
+        if (this._count !== count) {
+            this.console(`something new in repo ${this._id}`);
+            logger(`${this._title} something new in repo ${this._id}`);
+        }
         this._count = count;
-        this.console(`something new in repo ${this._id}`);
-        logger(`${this._title} something new in repo ${this._id}`);
     }
 }
 
