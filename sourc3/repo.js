@@ -73,13 +73,16 @@ class Repo {
 
     async __continue_pin() {
         const gitHash = this.__last_key();
+        logger(`${this._title} repo-${this._id} ${gitHash} get data`);
         if (gitHash) {
             this._api.contract(`cid=${this._cid},role=user,action=repo_get_data,repo_id=${this._id},obj_id=${gitHash}`,
                 (err, { object_data }) => {
+                    logger(`${this._title} repo-${this._id} ${gitHash} data recieved`);
+
                     if (err) {
                         this.console(`Failed to load repo data: \n\t${err}`)
                         logger(`${this._title} Failed to load repo data: \n\t${err}`);
-                        return
+                        return;
                     }
                     const ipfs_hash = hex2a(object_data);
                     this.__pin_meta(this._id, ipfs_hash, gitHash);

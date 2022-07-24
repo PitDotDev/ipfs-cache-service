@@ -120,19 +120,17 @@ class PitCreepingHandler extends Base {
         if (interimCount === objects.length && !this.watcher[id]?.reconnect) return;
         this.hashMap.set(id, objects.length);
 
+        const toIpfs = this._filterHashes(repoStatus.count, objects);
+
         if (!this.watcher[id]) {
-            const toIpfs = new Set(objects
-                .slice(repoStatus.count)
-                .filter((el) => el.object_type & 0x80)
-                .map((el) => el.object_hash)
-            );
+            const hashes = new Set(toIpfs);
 
             const params = {
                 id,
                 dbKey,
                 stableCount: repoStatus.count,
                 api: this.api,
-                hashes: toIpfs,
+                hashes,
                 cid: this.cid,
                 title: this.title,
                 color: this.color,
@@ -140,15 +138,15 @@ class PitCreepingHandler extends Base {
             }
             this.watcher[id] = new Repo(params);
             return;
+        } return this.watcher[id].addHashes(toIpfs, objects.length);
+    }
+
+    _filterHashes(count, objects) {
+        const filtered = [];
+        for (let i = objects.length - 1; i >= count; i--) {
+            if (objects[i].object_type & 0x80) filtered.push(objects[i].object_hash)
         }
-
-
-        const toIpfs = objects
-            .slice(repoStatus.count)
-            .filter((el) => el.object_type & 0x80)
-            .map((el) => el.object_hash);
-
-        this.watcher[id].addHashes(toIpfs, objects.length);
+        return filtered;
     }
 
     async __build_queue(repos, lastRepoId) {
