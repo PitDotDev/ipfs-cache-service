@@ -13,10 +13,19 @@ class Repo {
         this._inPin = false;
         this._count = count;
         this.startPin();
+        this._reconnect = false;
     }
 
     get inPin() {
         return this._inPin;
+    }
+
+    get reconnect() {
+        return this._reconnect;
+    }
+
+    set reconnect(bool) {
+        this._reconnect = bool;
     }
 
     __create_status(is_pending, is_final_pin) {
@@ -32,6 +41,7 @@ class Repo {
 
     startPin() {
         this._inPin = true;
+        this._reconnect = false;
         this.__continue_pin();
         store.setRepoStatus(this._dbKey, this.__create_status(true))
         this.console(`start pinning in repo ${this._id}`);

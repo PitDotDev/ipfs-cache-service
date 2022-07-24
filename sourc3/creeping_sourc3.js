@@ -23,7 +23,6 @@ const args = {
 class PitCreepingHandler extends Base {
     constructor(api) {
         super(args)
-        this.inProgress = false;
         this.hashMap = new Map();
         this.api = api;
         this.watcher = {};
@@ -48,7 +47,6 @@ class PitCreepingHandler extends Base {
     }
 
     on_api_result(res) {
-        if (this.inProgress) return;
         return this.__on_system_state(res);
     }
 
@@ -58,7 +56,6 @@ class PitCreepingHandler extends Base {
             // we're not in sync, wait
             return
         }
-        this.inProgress = true;
         this.api.contract(
             `cid=${this.cid},role=user,action=all_repos`,
             (...args) => this.__on_get_repos(...args)
@@ -107,34 +104,22 @@ class PitCreepingHandler extends Base {
 
         const { objects } = response;
 
-        const count = this.hashMap.get(id);
-        if (!count) this.hashMap.set(id, objects.length);
+        if (!objects.length) return;
 
-        if (!objects.length) {
-            // this.console(`nothing to pin in repo №${id}`);
-            return;
-        }
         const dbKey = [PENDING_REPO, this.cid, id].join('-');
         let repoStatus = {};
         try {
             repoStatus = await store.getRepoStatus(dbKey);
-            if (objects.length === repoStatus.count && this.restartPending) return;
+            if (objects.length === repoStatus.count) return;
         } catch (error) {
             repoStatus.count = 0;
             this.console(`repo ${id} not found in local database`);
         }
 
-        if (count === objects.length && !this.restartPending) return;
-        this.hashMap.set(id, objects.length); //TODO: not cool solution
+        const interimCount = this.hashMap.get(id);
+        if (interimCount === objects.length && !this.watcher[id]?.reconnect) return;
+        this.hashMap.set(id, objects.length);
 
-        // let lastIndex;
-        // try {
-        //     lastIndex = await store.getLastHash(`${this.title}-LAST_FAILED_INDEX`, id);
-        //     // throw new Error();
-        // } catch (error) {
-        //     lastIndex = index;
-        //     store.setLastHash(`${this.title}-LAST_FAILED_INDEX`, index, { id });
-        // }
         if (!this.watcher[id]) {
             const toIpfs = new Set(objects
                 .slice(repoStatus.count)
@@ -153,13 +138,8 @@ class PitCreepingHandler extends Base {
                 count: objects.length
             }
             this.watcher[id] = new Repo(params);
-            // this.console(`created watcher for repo №${id}`)
             return;
         }
-
-        // if (lastIndex === index) return;
-
-        // store.setLastHash(`${this.title}-LAST_FAILED_INDEX`, index, { id });
 
 
         const toIpfs = objects
@@ -168,7 +148,7 @@ class PitCreepingHandler extends Base {
             .map((el) => el.object_hash);
 
         this.watcher[id].addHashes(toIpfs, objects.length);
-        if (this.restartPending || !this.watcher[id].inPin) this.watcher[id].startPin();
+        if (this.watcher[id].reconnect || !this.watcher[id].inPin) this.watcher[id].startPin();
     }
 
     async __build_queue(repos, lastRepoId) {
@@ -191,8 +171,6 @@ class PitCreepingHandler extends Base {
         ].join('\n');
         this.console([`\n`, args].join(''));
         status.Config.Contracts[this.title] = args;
-        this.inProgress = false;
-        if (this.restartPending) this.restartPending = false;
     }
 
 }
