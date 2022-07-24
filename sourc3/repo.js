@@ -2,7 +2,7 @@ const { hex2a, logger } = require('../utils');
 const store = require('../store');
 
 class Repo {
-    constructor({ id, hashes, cid, api, color, title, dbKey, count }) {
+    constructor({ id, hashes, cid, api, color, title, dbKey, count, stableCount }) {
         this._id = id;
         this._cid = cid;
         this._api = api;
@@ -12,6 +12,7 @@ class Repo {
         this._dbKey = dbKey;
         this._inPin = false;
         this._count = count;
+        this._stable_count = stableCount;
         this.startPin();
         this._reconnect = false;
     }
@@ -33,9 +34,13 @@ class Repo {
             id: this._id,
             title: this._title,
             pending: is_pending,
+            count: this._stable_count
         };
 
-        if (is_final_pin) status.count = this._count;
+        if (is_final_pin) {
+            status.count = this._count;
+            this._stable_count = status.count;
+        }
         return status;
     }
 

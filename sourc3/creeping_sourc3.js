@@ -130,6 +130,7 @@ class PitCreepingHandler extends Base {
             const params = {
                 id,
                 dbKey,
+                stableCount: repoStatus.count,
                 api: this.api,
                 hashes: toIpfs,
                 cid: this.cid,
