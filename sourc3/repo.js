@@ -87,11 +87,13 @@ class Repo {
             );
             return;
         }
-        this._inPin = false;
         let status = {};
         try {
             status = await store.getRepoStatus(this._dbKey);
         } catch (err) { this.console(err) }
+
+        this._inPin = false;
+
         store.setRepoStatus(this._dbKey, { ...status, ... this.__create_status(false, 1) })
         this.console(`all hashes pinned in repo ${this._id}`);
         logger(`${this._title} all hashes pinned in repo ${this._id}`);
@@ -103,10 +105,13 @@ class Repo {
 
     addHashes(hashes, count) {
         hashes.forEach((el) => this._hashes.add(el));
+
         if (this._count !== count) {
             this.console(`something new in repo ${this._id}`);
             logger(`${this._title} something new in repo ${this._id}`);
         }
+        if (this._reconnect || !this._inPin) this.startPin();
+
         this._count = count;
     }
 }

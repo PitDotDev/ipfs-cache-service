@@ -149,7 +149,6 @@ class PitCreepingHandler extends Base {
             .map((el) => el.object_hash);
 
         this.watcher[id].addHashes(toIpfs, objects.length);
-        if (this.watcher[id].reconnect || !this.watcher[id].inPin) this.watcher[id].startPin();
     }
 
     async __build_queue(repos, lastRepoId) {
