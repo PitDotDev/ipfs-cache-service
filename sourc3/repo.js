@@ -74,9 +74,11 @@ class Repo {
     async __continue_pin() {
         const gitHash = this.__last_key();
         logger(`${this._title} repo-${this._id} ${gitHash} get data`);
+        const timeoutId = setTimeout(() => this.__continue_pin(), 20000);
         if (gitHash) {
             this._api.contract(`cid=${this._cid},role=user,action=repo_get_data,repo_id=${this._id},obj_id=${gitHash}`,
                 (err, { object_data }) => {
+                    clearTimeout(timeoutId);
                     logger(`${this._title} repo-${this._id} ${gitHash} data recieved`);
 
                     if (err) {
