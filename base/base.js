@@ -7,7 +7,7 @@ class Base {
         this.cid = cid;
         this.shader = shader;
         this.restartPending = config.RestartPending;
-        this.color = '\x1b[36m%s\x1b[0m'
+        this.color = '\x1b[36m%s\x1b[0m';
     }
 
     console(msg) {

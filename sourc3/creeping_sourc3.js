@@ -8,7 +8,7 @@ const Base = require('../base/base');
 
 const CID = '17885447b4c5f78b65ac01bfa5d63d6bc2dd7b239c6cd7ef57a918adba2071d3';
 const SHADER = path.join(__dirname, './app.wasm');
-const START_POINT = 0;
+const START_POINT = 65;
 const PENDING_REPO = "pending-repo";
 
 // const PENDING_REPO_HASH = "pending-repo-"
@@ -29,6 +29,7 @@ class PitCreepingHandler extends Base {
         this.inPin = 0;
         this.status = { pinned: 0, pending: 0, failed: 0 };
         this.color = "\x1b[34m";
+        this.start_point = START_POINT;
     }
 
     on_connect() {
@@ -85,7 +86,7 @@ class PitCreepingHandler extends Base {
         if (!repos.length) return this.console('no repos in contract');
 
         const lastRepoId = repos[repos.length - 1].repo_id;
-        const minimizedRepos = repos.filter((el) => el.repo_id >= START_POINT)
+        const minimizedRepos = repos.filter((el) => el.repo_id >= this.start_point)
         this.__build_queue(minimizedRepos, lastRepoId);
     }
 

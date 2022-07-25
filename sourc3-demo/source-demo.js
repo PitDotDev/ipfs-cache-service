@@ -8,6 +8,7 @@ class CreepingPitDemo extends CreepingPit {
         this.cid = CID;
         this.title = 'SOURC3_DEMO';
         this.color = '\x1b[44m';
+        this.start_point = 0;
     }
 }
 
