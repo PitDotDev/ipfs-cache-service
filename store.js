@@ -1,6 +1,9 @@
-const level = require('level')
-const config = require('./config')
-const status = require('./status')
+const level = require('level');
+const config = require('./config');
+const status = require('./status');
+
+const PENDING_REPO = "pending-repo";
+const HASHES = "hashes"
 
 function fatal(err) {
     if (err) {
@@ -55,45 +58,19 @@ class Store {
     }
     //sourc3
     setRepoStatus(key, val) {
-        return this.__put_async(key, val);
+        return this.__put_async([PENDING_REPO, key].join('-'), val);
     }
 
     getRepoStatus(key) {
-        return this.__get(key);
-    }
-    // Pit
-    setLastHash(prefix, value, params) {
-        const arr = params ? Object.values(params) : []
-        const key = [prefix, ...arr].join('');
-        this.__put_async(key, value);
+        return this.__get([PENDING_REPO, key].join('-'));
     }
 
-    getLastHash(...args) {
-        return this.__get(args.join(''));
+    setRepoHashes(key, val) {
+        return this.__put_async([HASHES, key].join('-'), val);
     }
 
-    registerFailed(prefix, hash, params) {
-        const arr = params ? Object.values(params) : []
-        const key = [prefix, hash, ...arr].join('');
-        this.__put_async(key, { hash, ...params });
-    }
-
-    registerPending(prefix, hash, params) {
-        const arr = params ? Object.values(params) : []
-        const key = [prefix, hash, ...arr].join('');
-        this.__put_async(key, { hash, ...params });
-    }
-
-    removePending(prefix, ...args) {
-        const key = [prefix, ...args].join('');
-        this.__del_async(key);
-    }
-
-    getPending(prefix) {
-        return this.db.iterator({
-            gte: `${prefix}`,
-            lte: `${prefix}~`
-        });
+    getRepoHashes(key) {
+        return this.__get([HASHES, key].join('-'));
     }
 
 }

@@ -2,7 +2,7 @@ const { hex2a, logger } = require('../utils');
 const store = require('../store');
 
 class Repo {
-    constructor({ id, hashes, cid, api, color, title, dbKey, count, stableCount }) {
+    constructor({ id, hashes, cid, api, color, title, dbKey }) {
         this._id = id;
         this._cid = cid;
         this._api = api;
@@ -11,8 +11,6 @@ class Repo {
         this._title = title;
         this._dbKey = dbKey;
         this._inPin = false;
-        this._count = count;
-        this._stable_count = stableCount;
         this.startPin();
         this._reconnect = false;
     }
@@ -29,27 +27,32 @@ class Repo {
         this._reconnect = bool;
     }
 
-    __create_status(is_pending, is_final_pin) {
+    async __create_status(is_pending) {
         const status = {
             id: this._id,
             title: this._title,
-            pending: is_pending,
-            count: this._stable_count
+            pending: is_pending
         };
-
-        if (is_final_pin) {
-            status.count = this._count;
-            this._stable_count = status.count;
-        }
         return status;
+    }
+
+    async __setRepoHashes(gitHash, ipfsHash) {
+        let hashes;
+        try {
+            hashes = await store.getRepoHashes(this._dbKey);
+        } catch (error) {
+            hashes = {}
+        }
+        hashes[gitHash] = ipfsHash;
+        store.setRepoHashes(this._dbKey, hashes);
     }
 
     startPin() {
         this._inPin = true;
         this._reconnect = false;
+        this.console(`start pinning in repo ${this._id}`);
         this.__continue_pin();
         store.setRepoStatus(this._dbKey, this.__create_status(true))
-        this.console(`start pinning in repo ${this._id}`);
         logger(`${this._title} start pinning in repo ${this._id}`);
     }
 
@@ -57,19 +60,22 @@ class Repo {
         console.log(this._color, `${this._title}: ${msg}`, '\x1b[0m')
     }
 
-    __pin_meta(id, ipfs_hash, gitHash) {
-        logger(`${this._title} repo-${this._id} ${gitHash} ${ipfs_hash} start pin`);
-        this._api.call('ipfs_pin', { hash: ipfs_hash }, (err) => {
+    __pin_meta(ipfsHash, gitHash) {
+        logger(`${this._title} repo-${this._id} ${gitHash} ${ipfsHash} start pin`);
+        this._api.call('ipfs_pin', { hash: ipfsHash }, (err) => {
             if (err) {
                 this.console(`${this._dbKey} failed`);
                 logger(`${this._title} ${this._dbKey} failed`);
                 return;
             };
             this._hashes.delete(gitHash);
-            logger(`${this._title} repo-${this._id} ${gitHash} ${ipfs_hash} successfuly pinned`);
+            this.__setRepoHashes(gitHash, ipfsHash)
+            logger(`${this._title} repo-${this._id} ${gitHash} ${ipfsHash} successfuly pinned`);
             this.__continue_pin();
         });
     }
+
+
 
     async __continue_pin() {
         const gitHash = this.__last_key();
@@ -87,7 +93,7 @@ class Repo {
                         return;
                     }
                     const ipfs_hash = hex2a(object_data);
-                    this.__pin_meta(this._id, ipfs_hash, gitHash);
+                    this.__pin_meta(ipfs_hash, gitHash);
                 }
             );
             return;
@@ -99,7 +105,7 @@ class Repo {
 
         this._inPin = false;
 
-        store.setRepoStatus(this._dbKey, { ...status, ... this.__create_status(false, 1) })
+        store.setRepoStatus(this._dbKey, { ...status, ...this.__create_status(false, 1) })
         this.console(`all hashes pinned in repo ${this._id}`);
         logger(`${this._title} all hashes pinned in repo ${this._id}`);
     }
@@ -108,16 +114,11 @@ class Repo {
         return [...this._hashes.keys()].pop();
     }
 
-    addHashes(hashes, count) {
+    addHashes(hashes) {
         hashes.forEach((el) => this._hashes.add(el));
-
-        if (this._count !== count) {
-            this.console(`something new in repo ${this._id}`);
-            logger(`${this._title} something new in repo ${this._id}`);
-        }
+        this.console(`something new in repo ${this._id}`);
+        logger(`${this._title} something new in repo ${this._id}`);
         if (this._reconnect || !this._inPin) this.startPin();
-
-        this._count = count;
     }
 }
 

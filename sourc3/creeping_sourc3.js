@@ -9,10 +9,6 @@ const Base = require('../base/base');
 const CID = '17885447b4c5f78b65ac01bfa5d63d6bc2dd7b239c6cd7ef57a918adba2071d3';
 const SHADER = path.join(__dirname, './app.wasm');
 const START_POINT = 65;
-const PENDING_REPO = "pending-repo";
-
-// const PENDING_REPO_HASH = "pending-repo-"
-// const LAST_FAILED_INDEX = "last-failed-index-"
 
 const args = {
     cid: CID,
@@ -38,9 +34,6 @@ class PitCreepingHandler extends Base {
                 `role=manager,action=view_contracts`,
                 (err, res) => {
                     if (err) return fatal(err)
-                    // if (!res.contracts.some(el => el.cid === this.cid)) {
-                    //     return fatal(`CID not found '${this.cid}'`)
-                    // }
                     resolve()
                 }, this.shader
             )
@@ -69,10 +62,8 @@ class PitCreepingHandler extends Base {
             (err, { object_data }) => {
                 if (err) {
                     this.status.failed++;
-                    // store.registerFailed(`${this.title}-FAILED_REPO`, git_hash, { id, index });
                     return logger(`${this.title}: Failed to load repo data:\n\t${err}`);
                 }
-                // store.registerPending(`${this.title}-PENDING_REPO_HASH`, git_hash, { id, index });
                 const ipfs_hash = hex2a(object_data);
                 this.__pin_meta(id, ipfs_hash, git_hash, index);
             });
@@ -107,13 +98,14 @@ class PitCreepingHandler extends Base {
 
         if (!objects.length) return;
 
-        const dbKey = [PENDING_REPO, this.cid, id].join('-');
-        let repoStatus = {};
+        const dbKey = [this.cid, id].join('-');
+        let storedHashes = {};
         try {
-            repoStatus = await store.getRepoStatus(dbKey);
-            if (objects.length === repoStatus.count) return;
+            storedHashes = await store.getRepoHashes(dbKey);
+            if (!storedHashes) throw new Error();
         } catch (error) {
-            repoStatus.count = 0;
+            storedHashes = {};
+            await store.setRepoHashes(dbKey, storedHashes);
             this.console(`repo ${id} not found in local database`);
         }
 
@@ -121,7 +113,7 @@ class PitCreepingHandler extends Base {
         if (interimCount === objects.length && !this.watcher[id]?.reconnect) return;
         this.hashMap.set(id, objects.length);
 
-        const toIpfs = this._filterHashes(repoStatus.count, objects);
+        const toIpfs = this._filterHashes(storedHashes, objects);
 
         if (!this.watcher[id]) {
             const hashes = new Set(toIpfs);
@@ -129,23 +121,23 @@ class PitCreepingHandler extends Base {
             const params = {
                 id,
                 dbKey,
-                stableCount: repoStatus.count,
-                api: this.api,
                 hashes,
+                api: this.api,
                 cid: this.cid,
                 title: this.title,
                 color: this.color,
-                count: objects.length
             }
             this.watcher[id] = new Repo(params);
             return;
         } return this.watcher[id].addHashes(toIpfs, objects.length);
     }
 
-    _filterHashes(count, objects) {
+    _filterHashes(hashes, objects) {
         const filtered = [];
-        for (let i = objects.length - 1; i >= count; i--) {
-            if (objects[i].object_type & 0x80) filtered.push(objects[i].object_hash)
+        for (let i = 0; i < objects.length; i++) {
+            if (objects[i].object_type & 0x80 && !hashes[objects[i].object_hash]) {
+                filtered.push(objects[i].object_hash);
+            }
         }
         return filtered;
     }

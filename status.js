@@ -1,6 +1,8 @@
 const config = require('./config');
 const store = require('./store');
 
+
+
 class Status {
     constructor() {
         this.Config = config
@@ -10,7 +12,7 @@ class Status {
         try {
             const q = url.parse(req.url, true).query
             if (!q['key']) throw new Error()
-            const status = await store.getRepoStatus(q['key']);
+            const status = await store.__get(q['key']); //TODO: make secure
             res.writeHead(200, { 'Content-Type': 'application/json' })
             return res.end(JSON.stringify(status))
         } catch (error) {
