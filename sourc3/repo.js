@@ -27,7 +27,7 @@ class Repo {
         this._reconnect = bool;
     }
 
-    async __create_status(is_pending) {
+    __create_status(is_pending) {
         const status = {
             id: this._id,
             title: this._title,
@@ -105,7 +105,7 @@ class Repo {
 
         this._inPin = false;
 
-        store.setRepoStatus(this._dbKey, { ...status, ...this.__create_status(false, 1) })
+        store.setRepoStatus(this._dbKey, this.__create_status(false))
         this.console(`all hashes pinned in repo ${this._id}`);
         logger(`${this._title} all hashes pinned in repo ${this._id}`);
     }
