@@ -1,14 +1,12 @@
-const WalletApi = require("./wallet-api");
-const config = require('./config');
 const { fatal } = require('./utils');
 
 class Listener {
-    async connect(...args) {
+    async connect(api, status, ...args) {
+        this.api = api;
         this.observers = [];
-        this.api = new WalletApi(config.WalletAPI.Address, config.WalletAPI.ReconnectInterval);
         const connects = [];
         args.forEach((Element) => {
-            const instance = new Element(this.api);
+            const instance = new Element(this.api, status);
             this.__attach(instance.on_api_result.bind(instance));
             connects.push(instance);
         });

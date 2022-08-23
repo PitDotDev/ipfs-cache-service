@@ -11,18 +11,28 @@ async function main() {
 
     // initialize, order is important
     const store = require('./store')
-    await store.init()
+    await store.init();
 
-    const status = require('./status')
+    const WalletApi = require('./wallet-api');
 
-    await new Listener().connect(Sourc3, Demo);
+    const api = new WalletApi(config.WalletAPI.Address, config.WalletAPI.ReconnectInterval);
+
+
+    const Status = require('./status');
+
+    const status = new Status(api);
+
+    await new Listener().connect(api, status, Sourc3, Demo);
 
     // setup routes
     const router = new Router();
 
-    router.register("/repo", (...args) => status.getRepoStatus(...args))
+    router.register("/repo", (...args) => status.getRepoStatus(...args));
 
-    router.register("/status", (...args) => status.report(...args))
+    router.register("/status", (...args) => status.report(...args));
+
+    router.register("/upload", (...args) => status.uploadImage(...args));
+
     router.register("/", (req, res) => {
         res.writeHead(200);
         res.end('Hi! This is the IPFS cache service.');

@@ -16,6 +16,9 @@ const app = express();
 
 app.use(cors());
 
+app.use(express.json())
+
+
 app.get('/', (_, res) => {
     res.send('beam-proxi is running!');
 })
@@ -85,8 +88,26 @@ app.get('/repo/:network/:key', (req, res) => {
                 .set('Content-Type', 'application/json')
                 .send(body);
         });
-})
+});
 
+app.post('/upload', (req, res) => {
+    console.log('upload:', req.body);
+    request(
+        {
+            method: 'POST',
+            uri: [`${networks.get('dappnet')}:13000`, 'upload'].join('/'),
+            body: JSON.stringify(req.body)
+        },
+        function (err, response, body) {
+            if (err) return res.status(500)
+                .set('Content-Type', 'application/json')
+                .send({ message: 'server error' });
+
+            return res.status(response.statusCode)
+                .set('Content-Type', 'application/json')
+                .send(body);
+        });
+});
 //
 
 app.listen(PORT, () =>

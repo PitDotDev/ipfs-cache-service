@@ -17,8 +17,9 @@ const args = {
 }
 
 class PitCreepingHandler extends Base {
-    constructor(api) {
+    constructor(api, status) {
         super(args)
+        this.sharedStat = status;
         this.hashMap = new Map();
         this.api = api;
         this.watcher = {};
@@ -161,7 +162,7 @@ class PitCreepingHandler extends Base {
             `pending: ${pending}`,
         ].join('\n');
         this.console([`\n`, args].join(''));
-        status.Config.Contracts[this.title] = args;
+        this.sharedStat.Config.Contracts[this.title] = args;
     }
 
 }
