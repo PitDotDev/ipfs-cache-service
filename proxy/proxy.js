@@ -15,7 +15,7 @@ const networks = new Map()
 const app = express();
 
 app.use(express.json({ limit: '50mb' }));
-
+app.use(cors);
 
 app.get('/', (_, res) => {
     res.send('beam-proxi is running!');
@@ -89,7 +89,7 @@ app.get('/repo/:network/:key', (req, res) => {
 });
 
 
-app.options('/upload', cors())
+app.options('/upload', cors());
 
 app.post('/upload', (req, res) => {
     console.log('upload:', req.body);
