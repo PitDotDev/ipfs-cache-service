@@ -14,8 +14,6 @@ const networks = new Map()
 
 const app = express();
 
-app.use(cors());
-
 app.use(express.json({ limit: '50mb' }));
 
 
@@ -89,6 +87,9 @@ app.get('/repo/:network/:key', (req, res) => {
                 .send(body);
         });
 });
+
+
+app.options('/upload', cors())
 
 app.post('/upload', (req, res) => {
     console.log('upload:', req.body);
