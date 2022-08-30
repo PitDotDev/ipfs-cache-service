@@ -1,6 +1,7 @@
 const cors = require('cors');
 const express = require('express');
 const request = require('request');
+const fileUpload = require('express-fileupload');
 
 const PORT = 14000;
 
@@ -14,7 +15,8 @@ const networks = new Map()
 
 const app = express();
 
-app.use(express.json({ limit: '50mb' }));
+app.use(fileUpload());
+app.use(express.json({ limit: '10mb' }));
 app.use(cors());
 
 app.get('/', (_, res) => {
@@ -92,12 +94,20 @@ app.get('/repo/:network/:key', (req, res) => {
 app.options('/upload', cors());
 
 app.post('/upload', (req, res) => {
-    console.log('upload:', req.body);
+    if (!req?.files.ipfs) {
+        return res.status(404)
+            .set('Content-Type', 'application/json')
+            .send({ message: 'no file' });
+    }
+    const data = Array.from(new Uint8Array(req.files.ipfs.data));
+
     request(
         {
             method: 'POST',
             uri: [`${networks.get('dappnet')}:13000`, 'upload'].join('/'),
-            body: JSON.stringify(req.body)
+            body: JSON.stringify({
+                data, timeout: 5000
+            })
         },
         function (err, response, body) {
             if (err) return res.status(500)
