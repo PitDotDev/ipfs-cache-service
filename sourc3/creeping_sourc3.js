@@ -84,7 +84,7 @@ class PitCreepingHandler extends Base {
 
     __on_get_meta() {
         this.api.contract(
-            `cid=${this.cid},role=user,action=repo_get_meta,repo_id=${repo_id}`,
+            `cid=${this.cid},role=user,action=repo_get_meta_by_id,repo_id=${repo_id}`,
             (...args) => this.__on_repo_meta(repo_id, ...args)
         )
     }
@@ -147,7 +147,7 @@ class PitCreepingHandler extends Base {
         const { repo_id } = repos.shift();
 
         this.api.contract(
-            `cid=${this.cid},role=user,action=repo_get_meta,repo_id=${repo_id}`,
+            `cid=${this.cid},role=user,action=repo_get_meta_by_id,repo_id=${repo_id}`,
             async (...args) => {
                 await this.__on_repo_meta(repo_id, ...args);
                 if (repo_id === lastRepoId) return this.__show_status();
